@@ -15,27 +15,21 @@ function shutdown() {
 
 async function startup({id, version, rootURI}) {
 
+    /*
     Zotero.PreferencePanes.register({
                 image: 'chrome/skin/amazon-s3.svg',
-                pluginID: 'zotero-s3@library.epfl.ch',
+                pluginID: 'juris-m@juris-m.github.io',
                 src: rootURI + 'prefs.xhtml'
         });
+        */
 
     
     Services.scriptloader.loadSubScript(rootURI + "s3.js");
 
-    const prefs = Services.prefs.getBranch("extensions.zotero-s3-sync.");
-    let options = {
-            bucket: prefs.getCharPref("bucket"),
-            region: prefs.getCharPref("region"),
-            accessKeyId: prefs.getCharPref("accessKeyId"),
-            secretAccessKey: prefs.getCharPref("secretAccessKey"),
-            endpoint: prefs.getCharPref("endpoint")
-    };
+    // const prefs = Services.prefs.getBranch("extensions.zotero-s3-sync.");
 
-    // Zotero.Sync.Storage.Mode.S3 = new Zotero.Sync.Storage.Mode.S3(options);
-    ZoteroS3.init({ id, version, rootURI });
-    ZoteroS3.addToAllWindows();
+    // ZoteroRTF.init({ id, version, rootURI });
+    // ZoteroRTF.addToAllWindows();
     log("S3 Sync storage mode registered.");
     
 }
