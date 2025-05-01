@@ -1,5 +1,3 @@
-const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
-Cu.import("resource://gre/modules/Services.jsm");
 
 const PREF_BRANCH = "extensions.zotero.";
 const PREFS = {
@@ -15,27 +13,46 @@ const PREFS = {
     "translators.ODFScan.includeTitle":false
 };
 
+let key;
+let val;
+
+if (Zotero.version < "7") {
+    const {classes: Cc, interfaces: Ci, utils: Cu} = Components;
+    Cu.import("resource://gre/modules/Services.jsm");
+
+    function setDefaultPrefs() {
+        let branch = Services.prefs.getDefaultBranch(PREF_BRANCH);
+        for (key in PREFS) {
+            val = PREFS[key];
+            switch (typeof val) {
+            case "boolean":
+                branch.setBoolPref(key, val);
+                break;
+            case "number":
+                branch.setIntPref(key, val);
+                break;
+            case "string":
+                branch.setCharPref(key, val);
+                break;
+            }
+        }
+    }
+
+}
+else {
+    function setDefaultPrefs() {
+        for (key in PREFS) {
+            val = PREFS[key];
+            Zotero.Prefs.set(key, val);
+        }
+    }
+}
+
 function logMessage(msg) {
     Zotero.debug("ODF Scan: " + msg);
 }
 
-function setDefaultPrefs() {
-    let branch = Services.prefs.getDefaultBranch(PREF_BRANCH);
-    for (let key in PREFS) {
-        let val = PREFS[key];
-        switch (typeof val) {
-        case "boolean":
-            branch.setBoolPref(key, val);
-            break;
-        case "number":
-            branch.setIntPref(key, val);
-            break;
-        case "string":
-            branch.setCharPref(key, val);
-            break;
-        }
-    }
-}
+
 
 /**
  * Apply a callback to each open and new browser windows.
@@ -266,9 +283,12 @@ function addMenuItem(window) {
 }
 
 function installTranslator() {
+    // This doesn't feel necessary?
+    /*
     let Zotero = Cc["@zotero.org/Zotero;1"]
         .getService(Ci.nsISupports)
         .wrappedJSObject;
+        */
 
     logMessage("installing ODF scan translator");
     let data = Zotero.File.getContentsFromURL("resource://rtf-odf-scan-for-zotero/translators/Scannable%20Cite.js");
