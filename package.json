@@ -1,7 +1,7 @@
 {
   "name": "zotero-odf-scan-plugin",
-  "version": "2.0.48",
-  "description": "Zotero ODF Scan",
+  "version": "3.0.0",
+  "description": "Zotero ODF Scan for Zotero 7",
   "directories": {
     "doc": "docs"
   },
@@ -9,7 +9,7 @@
     "build": "./build.py",
     "postversion": "./build.py --release",
     "release": "./release.sh",
-    "test": "eslint --fix bootstrap.js chrome/content/*.js 'resource/translators/Scannable Cite.js'"
+    "test": "eslint --fix bootstrap.js content/*.js 'resource/translators/Scannable Cite.js'"
   },
   "repository": {
     "type": "git",

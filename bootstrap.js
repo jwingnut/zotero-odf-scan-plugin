@@ -33,7 +33,7 @@ async function startup({ id, version, resourceURI, rootURI }, reason) {
   );
 
   // Call startup hook
-  await Zotero.ODFScan?.hooks.onStartup();
+  await Zotero.ODFScan?.hooks.onStartup({ id, version, resourceURI, rootURI });
 }
 
 async function onMainWindowLoad({ window }, reason) {

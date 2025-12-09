@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/steering/tech.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-09T20:54:19.852Z",
+      "trigger": "initial",
+      "approvalId": "approval_1765313659841_tcq6ebfy2",
+      "approvalTitle": "Tech steering document for ODF Scan plugin"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-09T20:54:22.234Z",
+      "trigger": "approved",
+      "approvalId": "approval_1765313659841_tcq6ebfy2",
+      "approvalTitle": "Tech steering document for ODF Scan plugin"
+    }
+  ]
+}

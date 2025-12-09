@@ -60,30 +60,34 @@ class Builder:
             os.remove(xpi)
 
         with zipfile.ZipFile(self.xpi, 'w', zipfile.ZIP_DEFLATED) as xpi:
-            for file in [
-                    'chrome.manifest', 'bootstrap.js', 'install.rdf', 'manifest.json',
-            ] + glob.glob('resource/**/*', recursive=True) + glob.glob(
-                    'chrome/**/*', recursive=True):
+            # Include new Zotero 7 files
+            files_to_include = [
+                'bootstrap.js',
+                'manifest.json',
+                'prefs.js',
+            ]
 
-                if file == 'install.rdf':
-                    rdf = etree.parse('install.rdf')
-                    rdf.find(
-                        './/em:version',
-                        namespaces=self.namespaces(rdf)).text = self.version
-                    xpi.writestr(file, etree.tostring(rdf, pretty_print=True))
+            # Add content files (XHTML, JS, CSS)
+            files_to_include.extend(glob.glob('content/*.xhtml', recursive=False))
+            files_to_include.extend(glob.glob('content/*.js', recursive=False))
+            files_to_include.extend(glob.glob('content/*.css', recursive=False))
 
-                elif file == 'chrome/locale/en-US/about.dtd':
-                    with open('chrome/locale/en-US/about.dtd') as f:
-                        dtd = etree.DTD(f)
+            # Add locale files (FTL)
+            files_to_include.extend(glob.glob('locale/**/*.ftl', recursive=True))
 
-                        entities = '<!ENTITY odfscan.version "' + self.version + '">\n'
+            # Add resource files (translators)
+            files_to_include.extend(glob.glob('resource/**/*', recursive=True))
 
-                        for entity in list(dtd.entities()):
-                            if entity.name == 'odfscan.version':
-                                continue
-                            entities += '<!ENTITY ' + entity.name + ' "' + entity.content + '">\n'
-                    xpi.writestr(file, entities)
+            # Filter out directories
+            files_to_include = [f for f in files_to_include if os.path.isfile(f)]
 
+            for file in files_to_include:
+                if file == 'manifest.json':
+                    # Update version in manifest.json
+                    with open(file) as f:
+                        manifest = json.load(f)
+                    manifest['version'] = self.version
+                    xpi.writestr(file, json.dumps(manifest, indent=2))
                 else:
                     xpi.write(file)
 

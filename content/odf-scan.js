@@ -84,10 +84,13 @@ if (!Zotero.ODFScan) {
      */
     onStartup: async function(params) {
       Zotero.debug('[ODF Scan] Plugin starting up');
-      Zotero.ODFScan.id = params.id;
-      Zotero.ODFScan.version = params.version;
-      Zotero.ODFScan.rootURI = params.rootURI;
-      Zotero.debug(`[ODF Scan] Version ${params.version} loaded`);
+      Zotero.ODFScan.id = params?.id;
+      Zotero.ODFScan.version = params?.version;
+      Zotero.ODFScan.rootURI = params?.rootURI;
+      Zotero.debug(`[ODF Scan] Version ${params?.version || 'unknown'} loaded`);
+
+      // Install the Scannable Cite translator
+      await Zotero.ODFScan.installTranslator();
     },
 
     /**
@@ -173,6 +176,160 @@ if (!Zotero.ODFScan) {
     } catch (e) {
       Zotero.logError(e);
       parentWindow.alert('Failed to open ODF Scan dialog: ' + e.message);
+    }
+  };
+
+  /**
+   * Install or update the Scannable Cite translator
+   * Called during plugin startup to ensure the translator is available
+   * @returns {Promise<boolean>} True if installation was successful
+   */
+  Zotero.ODFScan.installTranslator = async function() {
+    try {
+      Zotero.debug('[ODF Scan] Installing Scannable Cite translator');
+
+      // Wait for Zotero schema to be ready
+      await Zotero.Schema.schemaUpdatePromise;
+
+      // Load translator file from the plugin's resource directory
+      const translatorPath = 'resource://rtf-odf-scan-for-zotero/resource/translators/Scannable%20Cite.js';
+      const translatorCode = await Zotero.File.getContentsFromURLAsync(translatorPath);
+
+      // Parse translator metadata and code
+      // Translators have JSON metadata at the top, followed by code
+      const match = translatorCode.match(/^([\s\S]+?}\n\n)([\s\S]+)/);
+      if (!match) {
+        throw new Error('Failed to parse translator file format');
+      }
+
+      const headerJSON = match[1];
+      const code = match[2];
+
+      // Parse the metadata JSON
+      const header = JSON.parse(headerJSON);
+
+      Zotero.debug(`[ODF Scan] Translator metadata: ${header.label} v${header.lastUpdated}`);
+
+      // Save the translator to Zotero's database
+      await Zotero.Translators.save(header, code);
+
+      // Reinitialize translators to make the new one available
+      await Zotero.Translators.reinit();
+
+      Zotero.debug('[ODF Scan] Successfully installed Scannable Cite translator');
+      return true;
+    } catch (e) {
+      Zotero.logError('[ODF Scan] Failed to install translator: ' + e);
+      // Don't throw - translator installation failure shouldn't prevent plugin from loading
+      return false;
+    }
+  };
+
+  /**
+   * Wizard Controller
+   * Manages navigation between wizard pages
+   */
+  Zotero.ODFScan.WizardController = {
+    currentPage: 'intro',
+    pages: ['intro', 'scan', 'complete'],
+    canAdvanceState: false,
+
+    /**
+     * Navigate to a specific page
+     * @param {string} pageId - The page to navigate to ('intro', 'scan', 'complete')
+     */
+    goToPage: function(pageId) {
+      if (!this.pages.includes(pageId)) {
+        Zotero.debug(`[ODF Scan] Invalid page ID: ${pageId}`);
+        return;
+      }
+
+      Zotero.debug(`[ODF Scan] Navigating to page: ${pageId}`);
+
+      // Hide all pages
+      this.pages.forEach(page => {
+        const pageElement = document.getElementById(`${page}-page`);
+        if (pageElement) {
+          pageElement.classList.remove('active');
+        }
+      });
+
+      // Show the target page
+      const targetPage = document.getElementById(`${pageId}-page`);
+      if (targetPage) {
+        targetPage.classList.add('active');
+      }
+
+      this.currentPage = pageId;
+      this.updateButtons();
+    },
+
+    /**
+     * Advance to the next page
+     */
+    advance: function() {
+      const currentIndex = this.pages.indexOf(this.currentPage);
+      if (currentIndex < this.pages.length - 1) {
+        this.goToPage(this.pages[currentIndex + 1]);
+      }
+    },
+
+    /**
+     * Go back to the previous page
+     */
+    rewind: function() {
+      const currentIndex = this.pages.indexOf(this.currentPage);
+      if (currentIndex > 0) {
+        this.goToPage(this.pages[currentIndex - 1]);
+      }
+    },
+
+    /**
+     * Check if the wizard can advance from the current page
+     * @returns {boolean} True if can advance
+     */
+    canAdvance: function() {
+      return this.canAdvanceState;
+    },
+
+    /**
+     * Set whether the wizard can advance
+     * @param {boolean} value - True to enable advance
+     */
+    setCanAdvance: function(value) {
+      this.canAdvanceState = value;
+      this.updateButtons();
+    },
+
+    /**
+     * Update button states based on current page
+     */
+    updateButtons: function() {
+      const backButton = document.getElementById('back-button');
+      const nextButton = document.getElementById('next-button');
+      const finishButton = document.getElementById('finish-button');
+
+      if (!backButton || !nextButton || !finishButton) {
+        return;
+      }
+
+      const currentIndex = this.pages.indexOf(this.currentPage);
+
+      // Back button: enabled on all pages except first
+      backButton.disabled = currentIndex === 0;
+
+      // Next/Finish button logic
+      if (currentIndex === this.pages.length - 1) {
+        // Last page: show Finish button, hide Next
+        nextButton.style.display = 'none';
+        finishButton.style.display = '';
+        finishButton.disabled = false;
+      } else {
+        // Other pages: show Next button, hide Finish
+        nextButton.style.display = '';
+        finishButton.style.display = 'none';
+        nextButton.disabled = !this.canAdvanceState;
+      }
     }
   };
 

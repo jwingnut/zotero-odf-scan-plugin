@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/zotero7-migration/design.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-12-09T21:01:46.427Z",
+      "trigger": "initial",
+      "approvalId": "approval_1765314106418_yatgy28j3",
+      "approvalTitle": "Design for Zotero 7 Migration"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-12-09T21:07:27.003Z",
+      "trigger": "approved",
+      "approvalId": "approval_1765314106418_yatgy28j3",
+      "approvalTitle": "Design for Zotero 7 Migration"
+    }
+  ]
+}

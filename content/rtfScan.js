@@ -1,4 +1,4 @@
-﻿/*
+/*
     ***** BEGIN LICENSE BLOCK *****
 
     Copyright © 2009 Center for History and New Media
@@ -24,21 +24,21 @@
 */
 
 /**
- * @fileOverview Tools for automatically retrieving a citation for the given PDF
+ * @fileOverview ODF Scan Dialog - Conversion Logic
+ * Migrated for Zotero 7 XHTML dialogs
  */
 
  try {
-    // Zotero 6
+    // Zotero 6+
     var FilePicker = require('zotero/modules/filePicker').default;
 }
 catch (e) {
-    // Zotero 5
+    // Zotero 5 (fallback)
     var FilePicker = require('zotero/filePicker').default;
 }
 
-
 /**
- * Front end for recognizing PDFs
+ * Dialog controller for ODF Scan wizard
  * @namespace
  */
 var Zotero_ODFScan = new function() {
@@ -51,33 +51,64 @@ var Zotero_ODFScan = new function() {
     let unmappedCitationsChildren, ambiguousCitationsChildren, mappedCitationsChildren;
     let citations, citationItemIDs, allCitedItemIDs, contents;
 
-    // Load in the localization stringbundle for use by getString(name)
-    let stringBundleService =
-    Components.classes["@mozilla.org/intl/stringbundle;1"]
-        .getService(Components.interfaces.nsIStringBundleService);
-    let _localizedStringBundle = stringBundleService.createBundle(
-        "chrome://rtf-odf-scan-for-zotero/locale/zotero.properties");
-
-
-    function _getString(name, params){
-        let l10n;
-        try {
-            if (params != undefined){
-                if (typeof params != "object"){
-                    params = [params];
-                }
-                l10n = _localizedStringBundle.formatStringFromName(name, params, params.length);
-            }
-            else {
-                l10n = _localizedStringBundle.GetStringFromName(name);
-            }
-        }
-        catch (e){
-            throw ("Localized string not available for " + name);
-        }
-        return l10n;
+    // Use the new getString helper from Zotero.ODFScan
+    function getString(key, params) {
+        return Zotero.ODFScan.getString(key, params);
     }
 
+    // Get WizardController reference (will be set on init)
+    let WizardController = null;
+
+    /**
+     * Initialize the dialog
+     * Called when dialog loads
+     */
+    this.init = function() {
+        Zotero.debug('[ODF Scan Dialog] Initializing');
+
+        // Get WizardController reference
+        WizardController = Zotero.ODFScan.WizardController;
+
+        // Set up wizard navigation button handlers
+        document.getElementById('back-button').addEventListener('click', function() {
+            WizardController.rewind();
+        });
+
+        document.getElementById('next-button').addEventListener('click', function() {
+            Zotero_ODFScan.advance();
+        });
+
+        document.getElementById('finish-button').addEventListener('click', function() {
+            window.close();
+        });
+
+        document.getElementById('cancel-button').addEventListener('click', function() {
+            window.close();
+        });
+
+        // Initialize the intro page
+        this.introPageShowing();
+
+        // Update button states
+        WizardController.updateButtons();
+    };
+
+    /**
+     * Called when advancing from a page
+     * Handles page-specific advance logic
+     */
+    this.advance = function() {
+        const currentPage = WizardController.currentPage;
+
+        if (currentPage === 'intro') {
+            this.introPageAdvanced();
+            WizardController.advance();
+            this.scanPageShowing();
+        } else if (currentPage === 'scan') {
+            // Scan page advances automatically after processing
+            WizardController.advance();
+        }
+    };
 
     /** INTRO PAGE UI **/
 
@@ -93,9 +124,12 @@ var Zotero_ODFScan = new function() {
         }
         mode_string = mode_string.join("-");
         let selectedNode = document.getElementById("file-type-selector-" + mode_string);
-        let selector = document.getElementById("file-type-selector");
-        selector.selectedItem = selectedNode;
-        this.fileTypeSwitch(selectedNode.value);
+
+        if (selectedNode) {
+            selectedNode.checked = true;
+            this.fileTypeSwitch(selectedNode.value);
+        }
+
         document.getElementById("choose-input-file").focus();
     };
 
@@ -115,12 +149,16 @@ var Zotero_ODFScan = new function() {
    */
     this.chooseInputFile = async function () {
     // Hide any error message
-        document.getElementById("odf-file-error-message").setAttribute("hidden", "true");
+        let errorMsg = document.getElementById("odf-file-error-message");
+        if (errorMsg) {
+            errorMsg.style.display = "none";
+        }
+
         // get file type
         let fileType = Zotero.Prefs.get("ODFScan.fileType");
         // display file picker
         let fp = new FilePicker();
-        fp.init(window, _getString("ODFScan.openTitle"), fp.modeOpen);
+        fp.init(window, getString("odf-scan-open-title"), fp.modeOpen);
 
         let fileExt = fileType;
         if (fileType === "odf") {
@@ -128,7 +166,7 @@ var Zotero_ODFScan = new function() {
         } else {
             fp.appendFilters(fp.filterAll);
         }
-        fp.appendFilter(_getString("ODFScan." + fileType), "*." + fileExt);
+        fp.appendFilter(getString("odf-scan-file-type-" + fileType), "*." + fileExt);
 
         // Set directory if possible
         let outputMode = Zotero.Prefs.get("ODFScan.outputMode");
@@ -158,17 +196,20 @@ var Zotero_ODFScan = new function() {
             fileExt = "odt";
         }
         let fp = new FilePicker();
-        fp.init(window, _getString("ODFScan.saveTitle"), fp.modeSave);
-        fp.appendFilter(_getString("ODFScan." + fileType), "*." + fileExt);
+        fp.init(window, getString("odf-scan-save-title"), fp.modeSave);
+        fp.appendFilter(getString("odf-scan-file-type-" + fileType), "*." + fileExt);
         if (inputFile) {
             let leafName = inputFile.leafName;
             let dotIndex = leafName.lastIndexOf(".");
             if (dotIndex != -1) {
                 leafName = leafName.substr(0, dotIndex);
             }
-            let suffix = (" " + _getString("ODFScan."+fileType+".scannedFileSuffix" + outputMode));
+            let suffix = (" " + getString("odf-scan-" + fileType + "-scanned-file-suffix-" + outputMode.replace("to", "to-")));
             if (fileType === "odf") {
-                let suffixMatchers = [ " " + _getString("ODFScan.odf.scannedFileSuffixtomarkers"), " " + _getString("ODFScan.odf.scannedFileSuffixtocitations") ];
+                let suffixMatchers = [
+                    " " + getString("odf-scan-odf-scanned-file-suffix-to-markers"),
+                    " " + getString("odf-scan-odf-scanned-file-suffix-to-citations")
+                ];
                 for (let suffixMatcher of suffixMatchers) {
                     if (leafName.slice(-suffixMatcher.length, leafName.length) == suffixMatcher) {
                         leafName = leafName.slice(0, -suffixMatcher.length);
@@ -202,18 +243,20 @@ var Zotero_ODFScan = new function() {
    * @private
    */
     function _updatePath() {
-        document.documentElement.canAdvance = inputFile && outputFile;
+        WizardController.setCanAdvance(inputFile && outputFile);
+
         if (inputFile && inputFile.path) {
             document.getElementById("input-path").value = inputFile.path;
             document.getElementById("choose-output-file").disabled = false;
         } else {
-            document.getElementById("input-path").value = _getString("ODFScan.file.noneSelected.label");
+            document.getElementById("input-path").value = getString("odf-scan-file-none-selected-label");
             document.getElementById("choose-output-file").disabled = true;
         }
+
         if (outputFile) {
             document.getElementById("output-path").value = outputFile.path;
         } else {
-            document.getElementById("output-path").value = _getString("ODFScan.file.noneSelected.label");
+            document.getElementById("output-path").value = getString("odf-scan-file-none-selected-label");
         }
     }
 
@@ -221,7 +264,6 @@ var Zotero_ODFScan = new function() {
    * Called to refresh the path label in the dialog box when switching modes
    * @private
    */
-
     function _refreshPath() {
         let fileType = Zotero.Prefs.get("ODFScan.fileType");
         let outputMode = Zotero.Prefs.get("ODFScan.outputMode");
@@ -231,7 +273,7 @@ var Zotero_ODFScan = new function() {
             inputFile = Zotero.File.pathToFile(inputPath);
         } else {
             inputFile = null;
-            document.getElementById("input-path").value = _getString("ODFScan.file.noneSelected.label");
+            document.getElementById("input-path").value = getString("odf-scan-file-none-selected-label");
         }
         outputFile = null;
         _updatePath();
@@ -244,27 +286,30 @@ var Zotero_ODFScan = new function() {
    */
     this.scanPageShowing = function() {
     // can't advance
-        document.documentElement.canAdvance = false;
+        WizardController.setCanAdvance(false);
 
         let outputMode = Zotero.Prefs.get("ODFScan.outputMode");
 
-        document.getElementById("odf-file-error-message").setAttribute("hidden", "true");
+        let errorMsg = document.getElementById("odf-file-error-message");
+        if (errorMsg) {
+            errorMsg.style.display = "none";
+        }
 
         // wait a ms so that UI thread gets updated
-		window.setTimeout(async function() { await _scanODF(outputMode); }, 1);
+		window.setTimeout(function() { _scanODF(outputMode); }, 1);
     };
 
     /**
    * s = "Why do we do this entirely in SQL? Because we're crazy. Crazy like foxes."
    * s.replace(/in SQL/, "with regular expressions");
    */
-    async function _scanODF(outputMode) {
+    function _scanODF(outputMode) {
         let reverse_conversion = false;
         if (outputMode === "tomarkers") {
             reverse_conversion = true;
         }
         // when scanning is complete, go to citations page
-        document.documentElement.canAdvance = false;
+        WizardController.setCanAdvance(false);
 
         let tmplCitation = "<text:reference-mark-start text:name=\"ZOTERO_ITEM {&quot;properties&quot;:{&quot;formattedCitation&quot;:&quot;%{1}s&quot;},&quot;citationItems&quot;:%{2}s} RND%{3}s\"/>%{4}s<text:reference-mark-end text:name=\"ZOTERO_ITEM {&quot;properties&quot;:{&quot;formattedCitation&quot;:&quot;%{5}s&quot;},&quot;citationItems&quot;:%{6}s} RND%{7}s\"/>";
         let tmplText = "{ %{1}s | %{2}s | %{3}s | %{4}s |%{5}s}";
@@ -503,9 +548,9 @@ var Zotero_ODFScan = new function() {
 
         let ODFConv = function () {};
 
-        ODFConv.prototype.convert = async function () {
+        ODFConv.prototype.convert = function () {
             this.rands = {};
-            await this.readZipfileContent();
+            this.readZipfileContent();
 
             // Wipe out any font definitions in the style, they can mess things up pretty badly
             this.content = this.content.replace(/\s+fo:font-family="[^"]*"/g, "");
@@ -552,7 +597,7 @@ var Zotero_ODFScan = new function() {
 
             this.purgeStyles();
             this.purgeConfig();
-            await this.writeZipfileContent();
+            this.writeZipfileContent();
             return true;
         };
 
@@ -654,7 +699,7 @@ var Zotero_ODFScan = new function() {
                         }
                         else {
                             userID = myidlst[0];
-                        }                            
+                        }
                         item.uri = ["http://zotero.org/users/" + userID + "/items/" + myidlst[1]];
                         item.uris = item.uri.slice();
                     } else {
@@ -723,33 +768,34 @@ var Zotero_ODFScan = new function() {
             return randstr;
         };
 
-        ODFConv.prototype.readZipfileContent = async function () {
+        ODFConv.prototype.readZipfileContent = function () {
             // Scrub any meta string lying around
             this.meta = false;
 
-            try {
-                // Read the ODF file as a ZIP archive using Zotero.File
-                // Zotero 7 provides zipReader functionality through Zotero.File
-                const filePath = inputFile.path;
+            // grab a toolkit for file path manipulation
+            Components.utils.import("resource://gre/modules/FileUtils.jsm");
+            Components.utils.import("resource://gre/modules/NetUtil.jsm");
 
-                // Use Zotero.File to read ZIP contents
-                // Read content.xml (required)
-                this.content = await Zotero.File.zipExtractText(filePath, "content.xml");
-
-                // Try to read meta.xml (optional)
-                try {
-                    this.meta = await Zotero.File.zipExtractText(filePath, "meta.xml");
-                } catch (e) {
-                    // meta.xml might not exist in all ODF files, that's okay
-                    Zotero.debug("ODF Scan: meta.xml not found in archive (this is okay): " + e);
-                    this.meta = false;
-                }
-
-                Zotero.debug("ODF Scan: Successfully read ZIP file contents");
-            } catch (e) {
-                Zotero.logError("ODF Scan: Failed to read ZIP file: " + e);
-                throw new Error("Failed to read ODF file. The file may be corrupt or invalid.");
+            // grab the content.xml and meta.xml out of the input file
+            let zipReader = _getReader();
+            this.content = _getEntryContent("content.xml");
+            if (zipReader.hasEntry("meta.xml")) {
+                this.meta = _getEntryContent("meta.xml");
             }
+            zipReader.close();
+
+            function _getEntryContent(fileName) {
+                let inputStream = zipReader.getInputStream(fileName);
+                return Zotero.File.getContents(inputStream);
+            }
+
+            function _getReader () {
+                let zipReader = Components.classes["@mozilla.org/libjar/zip-reader;1"]
+                    .createInstance(Components.interfaces.nsIZipReader);
+                zipReader.open(inputFile);
+                return zipReader;
+            }
+
         };
 
 
@@ -761,35 +807,48 @@ var Zotero_ODFScan = new function() {
         };
 
 
-        ODFConv.prototype.writeZipfileContent = async function () {
-            try {
-                // Remove target file if it already exists
-                if (outputFile.exists()) {
-                    await IOUtils.remove(outputFile.path, { ignoreAbsent: true });
-                }
+        ODFConv.prototype.writeZipfileContent = function () {
 
-                // Copy input file to the new location
-                await IOUtils.copy(inputFile.path, outputFile.path);
-
-                // Update the ZIP file entries using Zotero.File
-                // Read the entire ZIP archive
-                const zipData = await IOUtils.read(outputFile.path);
-
-                // Create a text encoder for UTF-8 encoding
-                const encoder = new TextEncoder();
-
-                // Use Zotero.File to update ZIP entries
-                await Zotero.File.zipUpdate(outputFile.path, "content.xml", encoder.encode(this.content));
-
-                if (this.meta) {
-                    await Zotero.File.zipUpdate(outputFile.path, "meta.xml", encoder.encode(this.meta));
-                }
-
-                Zotero.debug("ODF Scan: Successfully wrote ZIP file contents");
-            } catch (e) {
-                Zotero.logError("ODF Scan: Failed to write ZIP file: " + e);
-                throw new Error("Failed to write ODF file. Check write permissions for the output location.");
+            // Remove target file it already exists
+            if (outputFile.exists()) {
+                outputFile.remove(false);
             }
+
+            // Copy input file to the new location
+            inputFile.copyTo(outputFile.parent,outputFile.leafName);
+
+            // get zip writer
+            const zipWriter = _getWriter();
+
+            // Remove context.xml and meta.xml
+            zipWriter.removeEntry("content.xml", false);
+            if (this.meta) {
+                zipWriter.removeEntry("meta.xml", false);
+            }
+
+            // Add our own context.xml and meta.xml
+            _addToZipFile("content.xml",this.content);
+            if (this.meta) {
+                _addToZipFile("meta.xml",this.meta);
+            }
+            zipWriter.close();
+
+            function _getWriter() {
+                let zipWriter = Components.classes["@mozilla.org/zipwriter;1"]
+                    .createInstance(Components.interfaces.nsIZipWriter);
+                // 0x02 = Read and Write
+                zipWriter.open(outputFile, 0x04 );
+                return zipWriter;
+            }
+
+            function _addToZipFile(fileName, data) {
+                let converter = Components.classes["@mozilla.org/intl/scriptableunicodeconverter"].
+                    createInstance(Components.interfaces.nsIScriptableUnicodeConverter);
+                converter.charset = "UTF-8";
+                let istream = converter.convertToInputStream(data);
+                zipWriter.addEntryStream(fileName, 0, 9, istream, false);
+            }
+
         };
 
         ODFConv.prototype.purgeStyles = function () {
@@ -856,17 +915,19 @@ var Zotero_ODFScan = new function() {
 
         let odfConv = new ODFConv();
         try {
-            if (await odfConv.convert()) {
-                document.documentElement.canAdvance = true;
-                document.documentElement.advance();
+            if (odfConv.convert()) {
+                WizardController.setCanAdvance(true);
+                WizardController.advance();
             }
         } catch (e) {
-            // Just replace the content with an error message?
+            // Show error message and rewind to intro page
             Zotero.debug("ERROR (rtf-odf-scan-for-zotero): "+e);
-            document.getElementById("odf-file-error-message").setAttribute("hidden", "false");
-            document.documentElement.canRewind = true;
-            document.documentElement.rewind();
-            document.documentElement.canAdvance = false;
+            let errorMsg = document.getElementById("odf-file-error-message");
+            if (errorMsg) {
+                errorMsg.style.display = "block";
+            }
+            WizardController.rewind();
+            WizardController.setCanAdvance(false);
         }
     }
 
@@ -960,8 +1021,8 @@ var Zotero_ODFScan = new function() {
             _refreshCanAdvance();
         } else {
             // skip this step for ODF conversion
-            document.documentElement.canAdvance = true;
-            document.documentElement.advance();
+            WizardController.setCanAdvance(true);
+            WizardController.advance();
         }
     };
 
@@ -971,7 +1032,7 @@ var Zotero_ODFScan = new function() {
    */
     this.citationsPageRewound = function() {
     // skip back to intro page
-        document.documentElement.currentPage = document.getElementById("intro-page");
+        WizardController.goToPage('intro');
 
         // remove children from tree
         while (unmappedCitationsChildren.hasChildNodes()) {
@@ -1066,7 +1127,7 @@ var Zotero_ODFScan = new function() {
             }
         }
 
-        document.documentElement.canAdvance = canAdvance;
+        WizardController.setCanAdvance(canAdvance);
     }
 
     /** STYLE PAGE UI **/
@@ -1079,8 +1140,8 @@ var Zotero_ODFScan = new function() {
             Zotero_File_Interface_Bibliography.init();
         } else {
             // skip this step for ODF conversion
-            document.documentElement.canAdvance = true;
-            document.documentElement.advance();
+            WizardController.setCanAdvance(true);
+            WizardController.advance();
         }
     };
 
@@ -1134,14 +1195,14 @@ var Zotero_ODFScan = new function() {
     this.formatPageShowing = function() {
         if (Zotero.Prefs.get("ODFScan.fileType") === "rtf") {
             // can't advance
-            document.documentElement.canAdvance = false;
+            WizardController.setCanAdvance(false);
 
             // wait a ms so that UI thread gets updated
             window.setTimeout(function() { _formatRTF(); }, 1);
         } else {
             // skip this step for ODF conversion
-            document.documentElement.canAdvance = true;
-            document.documentElement.advance();
+            WizardController.setCanAdvance(true);
+            WizardController.advance();
         }
     };
 
@@ -1251,7 +1312,12 @@ var Zotero_ODFScan = new function() {
 
         Zotero.File.putContents(outputFile, contents);
 
-        document.documentElement.canAdvance = true;
-        document.documentElement.advance();
+        WizardController.setCanAdvance(true);
+        WizardController.advance();
     }
 };
+
+// Initialize dialog when DOM is loaded
+window.addEventListener('DOMContentLoaded', function() {
+    Zotero_ODFScan.init();
+});
