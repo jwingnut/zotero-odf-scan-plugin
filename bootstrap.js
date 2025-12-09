@@ -3,9 +3,29 @@
  * Based on Zotero plugin template and Make It Red example
  */
 
+const { Services } = ChromeUtils.import("resource://gre/modules/Services.jsm");
+
 var chromeHandle;
 
 function install(data, reason) {}
+
+function setDefaultPrefs(rootURI) {
+  const defaults = Services.prefs.getDefaultBranch("");
+  const scope = {
+    pref(name, value) {
+      const type = typeof value;
+      if (type === "boolean") {
+        defaults.setBoolPref(name, value);
+      } else if (type === "number") {
+        defaults.setIntPref(name, value);
+      } else {
+        defaults.setCharPref(name, `${value}`);
+      }
+    },
+  };
+
+  Services.scriptloader.loadSubScript(`${rootURI}/prefs.js`, scope);
+}
 
 async function startup({ id, version, resourceURI, rootURI }, reason) {
   // Register chrome content
@@ -17,6 +37,8 @@ async function startup({ id, version, resourceURI, rootURI }, reason) {
     ["content", "odf-scan", rootURI + "content/"],
     ["resource", "rtf-odf-scan-for-zotero", rootURI],
   ]);
+
+  setDefaultPrefs(rootURI);
 
   /**
    * Global variables for plugin code.

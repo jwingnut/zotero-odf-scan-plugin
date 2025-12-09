@@ -6,8 +6,8 @@
   "author": "Frank Bennett",
   "homepage_url": "https://juris-m.github.io/zotero-odf-scan-plugin",
   "icons": {
-    "48": "chrome/skin/amazon-s3.svg",
-    "96": "chrome/skin/amazon-s3.svg"
+    "48": "content/icons/odf-scan.svg",
+    "96": "content/icons/odf-scan.svg"
   },
   "applications": {
     "zotero": {

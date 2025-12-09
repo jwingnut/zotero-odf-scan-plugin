@@ -118,8 +118,11 @@ if (!Zotero.ODFScan) {
           return;
         }
 
-        // Create menu item
-        const menuitem = doc.createXULElement('menuitem');
+        const XUL_NS = 'http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul';
+        // Create menu item that works across Zotero 6/7 window types
+        const menuitem = doc.createXULElement
+          ? doc.createXULElement('menuitem')
+          : doc.createElementNS(XUL_NS, 'menuitem');
         menuitem.id = 'menu_odfScan';
         menuitem.setAttribute('label', Zotero.ODFScan.getString('odf-scan-toolbar-label'));
         menuitem.addEventListener('command', function() {
