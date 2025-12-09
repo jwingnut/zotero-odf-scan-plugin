@@ -28,19 +28,21 @@
  * Migrated for Zotero 7 XHTML dialogs
  */
 
- try {
+let FilePicker;
+try {
     // Zotero 6+
-    var FilePicker = require('zotero/modules/filePicker').default;
+    FilePicker = require("zotero/modules/filePicker").default;
 }
 catch (e) {
     // Zotero 5 (fallback)
-    var FilePicker = require('zotero/filePicker').default;
+    FilePicker = require("zotero/filePicker").default;
 }
 
 /**
  * Dialog controller for ODF Scan wizard
  * @namespace
  */
+// eslint-disable-next-line no-var
 var Zotero_ODFScan = new function() {
     let inputFile = null, outputFile = null;
 
@@ -57,25 +59,25 @@ var Zotero_ODFScan = new function() {
      * Called when dialog loads
      */
     this.init = function() {
-        Zotero.debug('[ODF Scan Dialog] Initializing');
+        Zotero.debug("[ODF Scan Dialog] Initializing");
 
         // Get WizardController reference
         WizardController = Zotero.ODFScan.WizardController;
 
         // Set up wizard navigation button handlers
-        document.getElementById('back-button').addEventListener('click', function() {
+        document.getElementById("back-button").addEventListener("click", function() {
             WizardController.rewind();
         });
 
-        document.getElementById('next-button').addEventListener('click', function() {
+        document.getElementById("next-button").addEventListener("click", function() {
             Zotero_ODFScan.advance();
         });
 
-        document.getElementById('finish-button').addEventListener('click', function() {
+        document.getElementById("finish-button").addEventListener("click", function() {
             window.close();
         });
 
-        document.getElementById('cancel-button').addEventListener('click', function() {
+        document.getElementById("cancel-button").addEventListener("click", function() {
             window.close();
         });
 
@@ -93,11 +95,11 @@ var Zotero_ODFScan = new function() {
     this.advance = function() {
         const currentPage = WizardController.currentPage;
 
-        if (currentPage === 'intro') {
+        if (currentPage === "intro") {
             this.introPageAdvanced();
             WizardController.advance();
             this.scanPageShowing();
-        } else if (currentPage === 'scan') {
+        } else if (currentPage === "scan") {
             // Scan page advances automatically after processing
             WizardController.advance();
         }
@@ -289,7 +291,7 @@ var Zotero_ODFScan = new function() {
         }
 
         // wait a ms so that UI thread gets updated
-		window.setTimeout(function() { _scanODF(outputMode); }, 1);
+        window.setTimeout(function() { _scanODF(outputMode); }, 1);
     };
 
     /**
@@ -439,7 +441,7 @@ var Zotero_ODFScan = new function() {
                         // if has uri, get value, identify as user or group, and fashion zotero://select ref
                         let uri = item.uri;
                         if (!uri) {
-                            uri = item.uris
+                            uri = item.uris;
                         }
                         let key = [];
                         let m_uri = false;
@@ -687,8 +689,9 @@ var Zotero_ODFScan = new function() {
                     if (params.isUserItem) {
                         // If we ever want to go back to using the local UserID, this should work
                         // let userID = Zotero.Users.getCurrentUserID();
+                        let userID;
                         if (myidlst[0] == "0") {
-                            userID = 'local/' + Zotero.Users.getLocalUserKey();
+                            userID = "local/" + Zotero.Users.getLocalUserKey();
                         }
                         else {
                             userID = myidlst[0];
@@ -811,8 +814,8 @@ var Zotero_ODFScan = new function() {
                 compressionOptions: { level: 9 }
             });
 
-            // Write to output file
-            await Zotero.File.putContentsAsync(outputFile.path, output);
+            // Write to output file (binary)
+            await Zotero.File.putBinaryContentsAsync(outputFile.path, output);
         };
 
         ODFConv.prototype.purgeStyles = function () {
@@ -943,6 +946,6 @@ var Zotero_ODFScan = new function() {
 };
 
 // Initialize dialog when DOM is loaded
-window.addEventListener('DOMContentLoaded', function() {
+window.addEventListener("DOMContentLoaded", function() {
     Zotero_ODFScan.init();
 });

@@ -5,7 +5,7 @@
     },
     "extends": "eslint:recommended",
     "parserOptions": {
-        "ecmaVersion": 2015
+        "ecmaVersion": 2018
     },
     "rules": {
         "indent": [ "error", 4 ],
@@ -32,6 +32,13 @@
       "Iterator": false,
       "dump": false,
       "APP_SHUTDOWN": false,
-      "Zotero": true
+      "Zotero": true,
+      "JSZip": false,
+      "ChromeUtils": false,
+      "FilePicker": true,
+      "DOMParser": false,
+      "XMLSerializer": false,
+      "Zotero_ODFScan": true,
+      "require": false
     }
 }
