@@ -124,7 +124,7 @@
   - _Requirements: REQ-2_
   - _Prompt: Implement the task for spec zotero7-migration, first run spec-workflow-guide to get the workflow guide then implement the task: Role: JavaScript Developer with UI state management expertise | Task: Create WizardController that manages wizard page navigation. Track currentPage, implement goToPage(pageId) that hides all pages and shows target. Implement advance() and rewind() that move between pages in sequence. Update canAdvance state and button enabled states | Restrictions: Keep state in single object, pages are "intro", "scan", "complete", use class toggle for visibility | Success: Wizard navigates correctly between pages, buttons enable/disable appropriately | Instructions: Before starting, edit tasks.md to change [ ] to [-] for this task. After completion, use log-implementation tool to record what was done, then edit tasks.md to change [-] to [x]_
 
-- [-] 4.4 Migrate rtfScan.js conversion logic
+- [x] 4.4 Migrate rtfScan.js conversion logic
   - File: `content/rtfScan.js` (update existing)
   - Update DOM queries for XHTML elements
   - Replace document.documentElement.canAdvance with WizardController
@@ -134,7 +134,7 @@
   - _Requirements: REQ-3, REQ-4_
   - _Prompt: Implement the task for spec zotero7-migration, first run spec-workflow-guide to get the workflow guide then implement the task: Role: JavaScript Developer | Task: Update rtfScan.js to work with XHTML. Replace document.documentElement.canAdvance with WizardController calls. Update getElementById calls if any element IDs changed. Replace XUL-specific element access (tree.treeBoxObject, etc.) with HTML equivalents. Keep all conversion logic (Fragment class, ODFConv class, regex patterns) intact | Restrictions: Do NOT modify the core conversion regex patterns or logic, only update DOM interaction code | Success: All wizard page handlers work, conversion logic executes correctly | Instructions: Before starting, edit tasks.md to change [ ] to [-] for this task. After completion, use log-implementation tool to record what was done, then edit tasks.md to change [-] to [x]_
 
-- [ ] 4.5 Update localization calls in rtfScan.js
+- [x] 4.5 Update localization calls in rtfScan.js
   - File: `content/rtfScan.js` (continue)
   - Replace _getString() stringBundle calls with new getString() helper
   - Update string key names to match Fluent IDs
