@@ -38,30 +38,30 @@ _Files to modify: `content/rtfScan.js`_
 ## Phase 2: Dead Code Removal
 
 ### Task 2.1: Remove RTF-Specific Page Functions
-- [ ] 2.1.1 Remove citationsPageShowing() function at line 1019 (RTF-only, references tree element)
-- [ ] 2.1.2 Remove citationsPageRewound() function at line 1033 (references unmappedCitationsChildren)
-- [ ] 2.1.3 Remove treeClick() function at line 1057 (XUL tree interaction)
-- [ ] 2.1.4 Remove stylePageShowing() function at line 1138 (RTF-only, references style-listbox)
-- [ ] 2.1.5 Remove stylePageAdvanced() function at line 1151 (RTF-only)
-- [ ] 2.1.6 Remove formatPageShowing() function at line 1195 (RTF formatting)
-- [ ] 2.1.7 Remove _formatRTF() function at line 1209 (RTF formatting)
+- [x] 2.1.1 Remove citationsPageShowing() function at line 1019 (RTF-only, references tree element)
+- [x] 2.1.2 Remove citationsPageRewound() function at line 1033 (references unmappedCitationsChildren)
+- [x] 2.1.3 Remove treeClick() function at line 1057 (XUL tree interaction)
+- [x] 2.1.4 Remove stylePageShowing() function at line 1138 (RTF-only, references style-listbox)
+- [x] 2.1.5 Remove stylePageAdvanced() function at line 1151 (RTF-only)
+- [x] 2.1.6 Remove formatPageShowing() function at line 1195 (RTF formatting)
+- [x] 2.1.7 Remove _formatRTF() function at line 1209 (RTF formatting)
 
 _Files to modify: `content/rtfScan.js`_
 
 ### Task 2.2: Remove Dead Variables and Helper Functions
-- [ ] 2.2.1 Remove _generateItem() function at line 934 (creates XUL treeitem elements)
-- [ ] 2.2.2 Remove _matchesItemCreators() function at line 954 (RTF citation matching)
-- [ ] 2.2.3 Remove _matchesItemCreator() function at line 984 (RTF citation matching)
-- [ ] 2.2.4 Remove _refreshCanAdvance() function at line 1120 (references citationItemIDs)
-- [ ] 2.2.5 Remove unused variables at line 50: unmappedCitationsItem, ambiguousCitationsItem, mappedCitationsItem
-- [ ] 2.2.6 Remove unused variables at line 51: unmappedCitationsChildren, ambiguousCitationsChildren, mappedCitationsChildren
-- [ ] 2.2.7 Remove unused variables at line 52: citations, citationItemIDs, allCitedItemIDs, contents
+- [x] 2.2.1 Remove _generateItem() function at line 934 (creates XUL treeitem elements)
+- [x] 2.2.2 Remove _matchesItemCreators() function at line 954 (RTF citation matching)
+- [x] 2.2.3 Remove _matchesItemCreator() function at line 984 (RTF citation matching)
+- [x] 2.2.4 Remove _refreshCanAdvance() function at line 1120 (references citationItemIDs)
+- [x] 2.2.5 Remove unused variables at line 50: unmappedCitationsItem, ambiguousCitationsItem, mappedCitationsItem
+- [x] 2.2.6 Remove unused variables at line 51: unmappedCitationsChildren, ambiguousCitationsChildren, mappedCitationsChildren
+- [x] 2.2.7 Remove unused variables at line 52: citations, citationItemIDs, allCitedItemIDs, contents
 
 _Files to modify: `content/rtfScan.js`_
 
 ### Task 2.3: Verify Simplified Page Flow
-- [ ] 2.3.1 Confirm wizard only uses intro, scan, complete pages (already correct in WizardController)
-- [ ] 2.3.2 Verify advance() only handles intro and scan pages (update if needed)
+- [x] 2.3.1 Confirm wizard only uses intro, scan, complete pages (already correct in WizardController)
+- [x] 2.3.2 Verify advance() only handles intro and scan pages (update if needed)
 - [ ] 2.3.3 Test dialog opens and navigates correctly after dead code removal
 
 _Files to modify: `content/rtfScan.js` (if needed)_
@@ -69,33 +69,33 @@ _Files to modify: `content/rtfScan.js` (if needed)_
 ## Phase 3: Localization Completion
 
 ### Task 3.1: Add Missing UI Element Keys
-- [ ] 3.1.1 Add odf-scan-file-type-label for File type fieldset legend
-- [ ] 3.1.2 Add odf-scan-odf-to-citations for radio button label
-- [ ] 3.1.3 Add odf-scan-odf-to-markers for radio button label
-- [ ] 3.1.4 Add odf-scan-file-error for error message span
-- [ ] 3.1.5 Add odf-scan-back-button for Back button
-- [ ] 3.1.6 Add odf-scan-cancel-button for Cancel button
-- [ ] 3.1.7 Add odf-scan-next-button for Next button
-- [ ] 3.1.8 Add odf-scan-finish-button for Finish button
+- [x] 3.1.1 Add odf-scan-file-type-label for File type fieldset legend
+- [x] 3.1.2 Add odf-scan-odf-to-citations for radio button label
+- [x] 3.1.3 Add odf-scan-odf-to-markers for radio button label
+- [x] 3.1.4 Add odf-scan-file-error for error message span
+- [x] 3.1.5 Add odf-scan-back-button for Back button
+- [x] 3.1.6 Add odf-scan-cancel-button for Cancel button
+- [x] 3.1.7 Add odf-scan-next-button for Next button
+- [x] 3.1.8 Add odf-scan-finish-button for Finish button
 
 _Files to modify: `locale/en-US/odf-scan.ftl`_
 
 ### Task 3.2: Verify Existing Keys Match XHTML data-l10n-id Attributes
-- [ ] 3.2.1 Verify odf-scan-input-file matches (currently odf-scan-input-file-label in ftl)
-- [ ] 3.2.2 Verify odf-scan-output-file matches (currently odf-scan-output-file-label in ftl)
-- [ ] 3.2.3 Verify odf-scan-choose-file matches (currently odf-scan-file-choose-label in ftl)
-- [ ] 3.2.4 Verify odf-scan-no-file-selected matches (currently odf-scan-file-none-selected-label in ftl)
-- [ ] 3.2.5 Verify odf-scan-scan-description matches odf-scan-scan-page-description
-- [ ] 3.2.6 Verify odf-scan-complete-description matches odf-scan-complete-page-description
-- [ ] 3.2.7 Add aliases or update XHTML to use correct key names
+- [x] 3.2.1 Verify odf-scan-input-file matches (currently odf-scan-input-file-label in ftl)
+- [x] 3.2.2 Verify odf-scan-output-file matches (currently odf-scan-output-file-label in ftl)
+- [x] 3.2.3 Verify odf-scan-choose-file matches (currently odf-scan-file-choose-label in ftl)
+- [x] 3.2.4 Verify odf-scan-no-file-selected matches (currently odf-scan-file-none-selected-label in ftl)
+- [x] 3.2.5 Verify odf-scan-scan-description matches odf-scan-scan-page-description
+- [x] 3.2.6 Verify odf-scan-complete-description matches odf-scan-complete-page-description
+- [x] 3.2.7 Add aliases or update XHTML to use correct key names
 
 _Files to modify: `locale/en-US/odf-scan.ftl` and/or `content/rtfScan.xhtml`_
 
 ### Task 3.3: Add Intro Page Description Keys
-- [ ] 3.3.1 Verify odf-scan-intro-description-start exists or add it
-- [ ] 3.3.2 Verify odf-scan-intro-link exists or add it
-- [ ] 3.3.3 Verify odf-scan-intro-description2 exists or add it
-- [ ] 3.3.4 Verify odf-scan-intro-example1/2/3 exist or add them
+- [x] 3.3.1 Verify odf-scan-intro-description-start exists or add it
+- [x] 3.3.2 Verify odf-scan-intro-link exists or add it
+- [x] 3.3.3 Verify odf-scan-intro-description2 exists or add it
+- [x] 3.3.4 Verify odf-scan-intro-example1/2/3 exist or add them
 
 _Files to modify: `locale/en-US/odf-scan.ftl`_
 
