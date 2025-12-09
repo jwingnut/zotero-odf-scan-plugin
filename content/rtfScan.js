@@ -28,19 +28,8 @@
  * Migrated for Zotero 7 XHTML dialogs
  */
 
-let FilePicker = Zotero.FilePicker;
-if (!FilePicker && typeof require === "function") {
-    try {
-        FilePicker = require("zotero/modules/filePicker").default;
-    }
-    catch (e) {
-        try {
-            FilePicker = require("zotero/filePicker").default;
-        } catch (err) {
-            Zotero.logError(err);
-        }
-    }
-}
+// Import FilePicker for Zotero 7
+var { FilePicker } = ChromeUtils.importESModule("chrome://zotero/content/modules/filePicker.mjs");
 
 /**
  * Dialog controller for ODF Scan wizard

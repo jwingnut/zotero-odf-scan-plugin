@@ -53,6 +53,13 @@ async function startup({ id, version, resourceURI, rootURI }, reason) {
     if (Zotero.ODFScan && Zotero.ODFScan.hooks) {
         await Zotero.ODFScan.hooks.onStartup({ id, version, rootURI });
     }
+
+    // If main window is already open, register menu item now
+    // (onMainWindowLoad is only called for windows that open after startup)
+    let win = Zotero.getMainWindow();
+    if (win && Zotero.ODFScan && Zotero.ODFScan.hooks) {
+        await Zotero.ODFScan.hooks.onMainWindowLoad(win);
+    }
 }
 
 async function onMainWindowLoad({ window }, reason) {

@@ -18,32 +18,27 @@ if (!Zotero.ODFScan) {
    * @param {Object} args - Optional arguments for parameterized strings
    * @returns {string} The localized string, or the key if not found
    */
+    // Fallback strings for programmatic use (FilePicker titles, etc.)
+    const STRINGS = {
+        "odf-scan-title": "ODF Scan",
+        "odf-scan-toolbar-label": "ODF Scan",
+        "odf-scan-open-title": "Select a file to scan",
+        "odf-scan-save-title": "Select a location in which to save the converted file",
+        "odf-scan-file-type-odf": "Open Document Format (.odt)",
+        "odf-scan-file-type-rtf": "Rich Text Format (.rtf)",
+        "odf-scan-odf-scanned-file-suffix-to-citations": "(citations)",
+        "odf-scan-odf-scanned-file-suffix-to-markers": "(markers)",
+        "odf-scan-rtf-scanned-file-suffix-to-rtf": "(Scanned)"
+    };
+
     Zotero.ODFScan.getString = function(key, args = null) {
-        try {
-            // Try to use Zotero's localization system
-            if (Zotero.Intl && Zotero.Intl.getString) {
-                // Zotero 7 built-in localization API
-                return Zotero.Intl.getString("odf-scan", key, args);
-            }
-
-            // Fallback: try document.l10n if available (for dialog contexts)
-            if (typeof document !== "undefined" && document.l10n) {
-                // This is async, so we need a synchronous fallback
-                // For now, return a placeholder that will be replaced
-                let result = key;
-                document.l10n.formatValue(key, args).then(value => {
-                    result = value;
-                });
-                return result;
-            }
-
-            // Last resort: return the key itself
-            Zotero.debug(`[ODF Scan] Localization key not found: ${key}`);
-            return key;
-        } catch (e) {
-            Zotero.logError(e);
-            return key;
+        // Use hardcoded fallback strings for programmatic use
+        if (STRINGS[key]) {
+            return STRINGS[key];
         }
+        // Return key as last resort
+        Zotero.debug(`[ODF Scan] Localization key not found: ${key}`);
+        return key;
     };
 
     /**
