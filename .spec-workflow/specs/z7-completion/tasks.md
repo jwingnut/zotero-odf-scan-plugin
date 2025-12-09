@@ -102,19 +102,19 @@ _Files to modify: `locale/en-US/odf-scan.ftl`_
 ## Phase 4: Build and Verification
 
 ### Task 4.1: Update Build Configuration
-- [ ] 4.1.1 Verify build.py includes content/lib directory in glob patterns
-- [ ] 4.1.2 Build XPI with python3 build.py
-- [ ] 4.1.3 Extract XPI and verify content/lib/jszip.min.js is present
-- [ ] 4.1.4 Verify locale/en-US/odf-scan.ftl is included in XPI
+- [x] 4.1.1 Verify build.py includes content/lib directory in glob patterns
+- [x] 4.1.2 Build XPI with python3 build.py
+- [x] 4.1.3 Extract XPI and verify content/lib/jszip.min.js is present
+- [x] 4.1.4 Verify locale/en-US/odf-scan.ftl is included in XPI
 
 _Files to modify: `build.py` (if needed)_
 
 _Note: npm install may update package-lock.json if ESLint deps are refreshed_
 
 ### Task 4.2: ESLint Compliance
-- [ ] 4.2.1 Run npm install to get ESLint dependencies
-- [ ] 4.2.2 Run npm test to check for lint errors
-- [ ] 4.2.3 Fix any ESLint errors in modified JavaScript files
+- [x] 4.2.1 Run npm install to get ESLint dependencies
+- [x] 4.2.2 Run npm test to check for lint errors
+- [x] 4.2.3 Fix any ESLint errors in modified JavaScript files
 
 _Files to modify: Various JS files as needed, potentially package-lock.json_
 
