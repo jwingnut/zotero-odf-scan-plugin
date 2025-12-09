@@ -72,6 +72,7 @@ class Builder:
             files_to_include.extend(glob.glob('content/*.js', recursive=False))
             files_to_include.extend(glob.glob('content/*.css', recursive=False))
             files_to_include.extend(glob.glob('content/icons/**/*', recursive=True))
+            files_to_include.extend(glob.glob('content/lib/**/*', recursive=True))
 
             # Add locale files (FTL)
             files_to_include.extend(glob.glob('locale/**/*.ftl', recursive=True))

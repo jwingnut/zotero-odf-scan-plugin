@@ -303,7 +303,7 @@ var Zotero_ODFScan = new function() {
    * s = "Why do we do this entirely in SQL? Because we're crazy. Crazy like foxes."
    * s.replace(/in SQL/, "with regular expressions");
    */
-    function _scanODF(outputMode) {
+    async function _scanODF(outputMode) {
         let reverse_conversion = false;
         if (outputMode === "tomarkers") {
             reverse_conversion = true;
@@ -548,9 +548,9 @@ var Zotero_ODFScan = new function() {
 
         let ODFConv = function () {};
 
-        ODFConv.prototype.convert = function () {
+        ODFConv.prototype.convert = async function () {
             this.rands = {};
-            this.readZipfileContent();
+            await this.readZipfileContent();
 
             // Wipe out any font definitions in the style, they can mess things up pretty badly
             this.content = this.content.replace(/\s+fo:font-family="[^"]*"/g, "");
@@ -597,7 +597,7 @@ var Zotero_ODFScan = new function() {
 
             this.purgeStyles();
             this.purgeConfig();
-            this.writeZipfileContent();
+            await this.writeZipfileContent();
             return true;
         };
 
@@ -768,34 +768,29 @@ var Zotero_ODFScan = new function() {
             return randstr;
         };
 
-        ODFConv.prototype.readZipfileContent = function () {
+        ODFConv.prototype.readZipfileContent = async function () {
             // Scrub any meta string lying around
             this.meta = false;
 
-            // grab a toolkit for file path manipulation
-            Components.utils.import("resource://gre/modules/FileUtils.jsm");
-            Components.utils.import("resource://gre/modules/NetUtil.jsm");
+            // Read the ODF file using JSZip
+            const data = await Zotero.File.getBinaryContentsAsync(inputFile.path);
+            const zip = await JSZip.loadAsync(data);
 
-            // grab the content.xml and meta.xml out of the input file
-            let zipReader = _getReader();
-            this.content = _getEntryContent("content.xml");
-            if (zipReader.hasEntry("meta.xml")) {
-                this.meta = _getEntryContent("meta.xml");
+            // Get content.xml (required)
+            const contentFile = zip.file("content.xml");
+            if (!contentFile) {
+                throw new Error("Invalid ODF file: content.xml not found");
             }
-            zipReader.close();
+            this.content = await contentFile.async("string");
 
-            function _getEntryContent(fileName) {
-                let inputStream = zipReader.getInputStream(fileName);
-                return Zotero.File.getContents(inputStream);
-            }
-
-            function _getReader () {
-                let zipReader = Components.classes["@mozilla.org/libjar/zip-reader;1"]
-                    .createInstance(Components.interfaces.nsIZipReader);
-                zipReader.open(inputFile);
-                return zipReader;
+            // Get meta.xml (optional)
+            const metaFile = zip.file("meta.xml");
+            if (metaFile) {
+                this.meta = await metaFile.async("string");
             }
 
+            // Store zip for later writing
+            this._zip = zip;
         };
 
 
@@ -807,54 +802,29 @@ var Zotero_ODFScan = new function() {
         };
 
 
-        ODFConv.prototype.writeZipfileContent = function () {
+        ODFConv.prototype.writeZipfileContent = async function () {
+            // Update content.xml in the zip
+            this._zip.file("content.xml", this.content);
 
-            // Remove target file it already exists
-            if (outputFile.exists()) {
-                outputFile.remove(false);
-            }
-
-            // Copy input file to the new location
-            inputFile.copyTo(outputFile.parent,outputFile.leafName);
-
-            // get zip writer
-            const zipWriter = _getWriter();
-
-            // Remove context.xml and meta.xml
-            zipWriter.removeEntry("content.xml", false);
+            // Update meta.xml if it exists
             if (this.meta) {
-                zipWriter.removeEntry("meta.xml", false);
+                this._zip.file("meta.xml", this.meta);
             }
 
-            // Add our own context.xml and meta.xml
-            _addToZipFile("content.xml",this.content);
-            if (this.meta) {
-                _addToZipFile("meta.xml",this.meta);
-            }
-            zipWriter.close();
+            // Generate the output as Uint8Array
+            const output = await this._zip.generateAsync({
+                type: "uint8array",
+                compression: "DEFLATE",
+                compressionOptions: { level: 9 }
+            });
 
-            function _getWriter() {
-                let zipWriter = Components.classes["@mozilla.org/zipwriter;1"]
-                    .createInstance(Components.interfaces.nsIZipWriter);
-                // 0x02 = Read and Write
-                zipWriter.open(outputFile, 0x04 );
-                return zipWriter;
-            }
-
-            function _addToZipFile(fileName, data) {
-                let converter = Components.classes["@mozilla.org/intl/scriptableunicodeconverter"].
-                    createInstance(Components.interfaces.nsIScriptableUnicodeConverter);
-                converter.charset = "UTF-8";
-                let istream = converter.convertToInputStream(data);
-                zipWriter.addEntryStream(fileName, 0, 9, istream, false);
-            }
-
+            // Write to output file
+            await Zotero.File.putContentsAsync(outputFile.path, output);
         };
 
         ODFConv.prototype.purgeStyles = function () {
-
-            let decodeXML = Components.classes["@mozilla.org/xmlextras/domparser;1"]
-                .createInstance(Components.interfaces.nsIDOMParser);
+            // Use standard DOMParser (no XPCOM needed in Zotero 7)
+            let decodeXML = new DOMParser();
             let encodeXML = new XMLSerializer();
 
             let doc = decodeXML.parseFromString(this.content,"application/xml");
@@ -915,7 +885,7 @@ var Zotero_ODFScan = new function() {
 
         let odfConv = new ODFConv();
         try {
-            if (odfConv.convert()) {
+            if (await odfConv.convert()) {
                 WizardController.setCanAdvance(true);
                 WizardController.advance();
             }
