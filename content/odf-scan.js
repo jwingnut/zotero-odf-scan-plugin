@@ -194,8 +194,8 @@ if (!Zotero.ODFScan) {
             // Wait for Zotero schema to be ready
             await Zotero.Schema.schemaUpdatePromise;
 
-            // Load translator file from the plugin's resource directory
-            const translatorPath = "resource://rtf-odf-scan-for-zotero/resource/translators/Scannable%20Cite.js";
+            // Load translator file using rootURI set during startup
+            const translatorPath = Zotero.ODFScan.rootURI + "resource/translators/Scannable%20Cite.js";
             const translatorCode = await Zotero.File.getContentsFromURLAsync(translatorPath);
 
             // Parse translator metadata and code

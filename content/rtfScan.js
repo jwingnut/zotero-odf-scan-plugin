@@ -28,14 +28,18 @@
  * Migrated for Zotero 7 XHTML dialogs
  */
 
-let FilePicker;
-try {
-    // Zotero 6+
-    FilePicker = require("zotero/modules/filePicker").default;
-}
-catch (e) {
-    // Zotero 5 (fallback)
-    FilePicker = require("zotero/filePicker").default;
+let FilePicker = Zotero.FilePicker;
+if (!FilePicker && typeof require === "function") {
+    try {
+        FilePicker = require("zotero/modules/filePicker").default;
+    }
+    catch (e) {
+        try {
+            FilePicker = require("zotero/filePicker").default;
+        } catch (err) {
+            Zotero.logError(err);
+        }
+    }
 }
 
 /**
