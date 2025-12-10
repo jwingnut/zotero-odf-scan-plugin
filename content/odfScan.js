@@ -356,28 +356,27 @@ var Zotero_ODFScan = new function() {
         fp.init(window, getString("odf-scan-save-title"), fp.modeSave);
         fp.appendFilter(getString("odf-scan-file-type-" + fileType), "*." + fileExt);
 
-        if (inputFile) {
+        // Build default filename based on input file
+        let defaultName = "Untitled." + fileExt;
+        if (inputFile && inputFile.leafName) {
             let leafName = inputFile.leafName;
             let dotIndex = leafName.lastIndexOf(".");
             if (dotIndex != -1) {
                 leafName = leafName.substr(0, dotIndex);
             }
-            let suffix = (" " + getString("odf-scan-" + fileType + "-scanned-file-suffix-" + outputMode.replace("to", "to-")));
-            if (fileType === "odf") {
-                let suffixMatchers = [
-                    " " + getString("odf-scan-odf-scanned-file-suffix-to-markers"),
-                    " " + getString("odf-scan-odf-scanned-file-suffix-to-citations")
-                ];
-                for (let suffixMatcher of suffixMatchers) {
-                    if (leafName.slice(-suffixMatcher.length, leafName.length) == suffixMatcher) {
-                        leafName = leafName.slice(0, -suffixMatcher.length);
-                    }
-                }
+            // Get suffix based on output mode
+            let suffix = "";
+            if (outputMode === "tocitations") {
+                suffix = " (citations)";
+            } else if (outputMode === "tomarkers") {
+                suffix = " (markers)";
             }
-            fp.defaultString = leafName + suffix + "." + fileExt;
-        } else {
-            fp.defaultString = "Untitled." + fileExt;
+            // Remove existing suffixes if present
+            leafName = leafName.replace(/ \(citations\)$/, "").replace(/ \(markers\)$/, "");
+            defaultName = leafName + suffix + "." + fileExt;
         }
+        fp.defaultString = defaultName;
+        Zotero.debug("[ODF Scan] Set defaultString to: " + defaultName);
 
         // Set directory - prefer last output location, fall back to input file's directory
         let outputPath = Zotero.Prefs.get("ODFScan."+fileType+".lastOutputFile" + outputMode);
@@ -397,7 +396,7 @@ var Zotero_ODFScan = new function() {
             Zotero.debug("[ODF Scan] Could not set display directory: " + e);
         }
 
-        Zotero.debug("[ODF Scan] Showing save file picker with defaultString: " + fp.defaultString);
+        Zotero.debug("[ODF Scan] Showing save file picker...");
         let rv = await fp.show();
         Zotero.debug("[ODF Scan] File picker returned: " + rv);
 
@@ -498,7 +497,7 @@ var Zotero_ODFScan = new function() {
    * s = "Why do we do this entirely in SQL? Because we're crazy. Crazy like foxes."
    * s.replace(/in SQL/, "with regular expressions");
    */
-    async function _scanODF(outputMode) {
+    function _scanODF(outputMode) {
         let reverse_conversion = false;
         if (outputMode === "tomarkers") {
             reverse_conversion = true;
@@ -743,9 +742,12 @@ var Zotero_ODFScan = new function() {
 
         let ODFConv = function () {};
 
-        ODFConv.prototype.convert = async function () {
+        ODFConv.prototype.convert = function () {
+            Zotero.debug("[ODF Scan] ODFConv.convert() starting...");
             this.rands = {};
-            await this.readZipfileContent();
+            Zotero.debug("[ODF Scan] Reading zip file content...");
+            this.readZipfileContent();
+            Zotero.debug("[ODF Scan] Zip file read successfully, content length: " + this.content.length);
 
             // Wipe out any font definitions in the style, they can mess things up pretty badly
             this.content = this.content.replace(/\s+fo:font-family="[^"]*"/g, "");
@@ -790,9 +792,13 @@ var Zotero_ODFScan = new function() {
                 this.composeCitations();
             }
 
+            Zotero.debug("[ODF Scan] Purging styles...");
             this.purgeStyles();
+            Zotero.debug("[ODF Scan] Purging config...");
             this.purgeConfig();
-            await this.writeZipfileContent();
+            Zotero.debug("[ODF Scan] Writing zip file content...");
+            this.writeZipfileContent();
+            Zotero.debug("[ODF Scan] Write complete!");
             return true;
         };
 
@@ -964,29 +970,29 @@ var Zotero_ODFScan = new function() {
             return randstr;
         };
 
-        ODFConv.prototype.readZipfileContent = async function () {
+        ODFConv.prototype.readZipfileContent = function () {
             // Scrub any meta string lying around
             this.meta = false;
 
-            // Read the ODF file using JSZip
-            const data = await Zotero.File.getBinaryContentsAsync(inputFile.path);
-            const zip = await JSZip.loadAsync(data);
-
-            // Get content.xml (required)
-            const contentFile = zip.file("content.xml");
-            if (!contentFile) {
-                throw new Error("Invalid ODF file: content.xml not found");
+            // grab the content.xml and meta.xml out of the input file
+            let zipReader = _getReader();
+            this.content = _getEntryContent("content.xml");
+            if (zipReader.hasEntry("meta.xml")) {
+                this.meta = _getEntryContent("meta.xml");
             }
-            this.content = await contentFile.async("string");
+            zipReader.close();
 
-            // Get meta.xml (optional)
-            const metaFile = zip.file("meta.xml");
-            if (metaFile) {
-                this.meta = await metaFile.async("string");
+            function _getEntryContent(fileName) {
+                let inputStream = zipReader.getInputStream(fileName);
+                return Zotero.File.getContents(inputStream);
             }
 
-            // Store zip for later writing
-            this._zip = zip;
+            function _getReader() {
+                let zipReader = Components.classes["@mozilla.org/libjar/zip-reader;1"]
+                    .createInstance(Components.interfaces.nsIZipReader);
+                zipReader.open(inputFile);
+                return zipReader;
+            }
         };
 
 
@@ -998,24 +1004,58 @@ var Zotero_ODFScan = new function() {
         };
 
 
-        ODFConv.prototype.writeZipfileContent = async function () {
-            // Update content.xml in the zip
-            this._zip.file("content.xml", this.content);
-
-            // Update meta.xml if it exists
-            if (this.meta) {
-                this._zip.file("meta.xml", this.meta);
+        ODFConv.prototype.writeZipfileContent = function () {
+            // Remove target file if it already exists
+            if (outputFile.exists()) {
+                outputFile.remove(false);
             }
 
-            // Generate the output as Uint8Array
-            const output = await this._zip.generateAsync({
-                type: "uint8array",
-                compression: "DEFLATE",
-                compressionOptions: { level: 9 }
-            });
+            // Copy input file to the new location
+            inputFile.copyTo(outputFile.parent, outputFile.leafName);
 
-            // Write to output file (binary)
-            await Zotero.File.putBinaryContentsAsync(outputFile.path, output);
+            // get zip writer
+            const zipWriter = _getWriter();
+
+            // Remove content.xml and meta.xml
+            zipWriter.removeEntry("content.xml", false);
+            if (this.meta) {
+                zipWriter.removeEntry("meta.xml", false);
+            }
+
+            // Add our own content.xml and meta.xml
+            _addToZipFile("content.xml", this.content);
+            if (this.meta) {
+                _addToZipFile("meta.xml", this.meta);
+            }
+            zipWriter.close();
+
+            function _getWriter() {
+                let zipWriter = Components.classes["@mozilla.org/zipwriter;1"]
+                    .createInstance(Components.interfaces.nsIZipWriter);
+                // 0x04 = Read and Write
+                zipWriter.open(outputFile, 0x04);
+                return zipWriter;
+            }
+
+            function _addToZipFile(fileName, data) {
+                // Convert string to UTF-8 bytes
+                let encoder = new TextEncoder();
+                let uint8Array = encoder.encode(data);
+
+                // Create ArrayBuffer input stream
+                let arrayBufferInputStream = Components.classes["@mozilla.org/io/arraybuffer-input-stream;1"]
+                    .createInstance(Components.interfaces.nsIArrayBufferInputStream);
+                arrayBufferInputStream.setData(uint8Array.buffer, 0, uint8Array.length);
+
+                // Add to zip with compression
+                zipWriter.addEntryStream(
+                    fileName,
+                    Date.now() * 1000,
+                    Components.interfaces.nsIZipWriter.COMPRESSION_BEST,
+                    arrayBufferInputStream,
+                    false
+                );
+            }
         };
 
         ODFConv.prototype.purgeStyles = function () {
@@ -1079,15 +1119,24 @@ var Zotero_ODFScan = new function() {
 
         };
 
+        Zotero.debug("[ODF Scan] Starting ODF conversion...");
+        Zotero.debug("[ODF Scan] Input file: " + inputFile.path);
+        Zotero.debug("[ODF Scan] Output file: " + outputFile.path);
+
         let odfConv = new ODFConv();
         try {
-            if (await odfConv.convert()) {
+            Zotero.debug("[ODF Scan] Calling odfConv.convert()...");
+            if (odfConv.convert()) {
+                Zotero.debug("[ODF Scan] Conversion successful!");
                 WizardController.setCanAdvance(true);
                 WizardController.advance();
+            } else {
+                Zotero.debug("[ODF Scan] Conversion returned false");
             }
         } catch (e) {
             // Show error message and rewind to intro page
-            Zotero.debug("ERROR (rtf-odf-scan-for-zotero): "+e);
+            Zotero.logError("[ODF Scan] ERROR: " + e);
+            Zotero.debug("[ODF Scan] Stack: " + (e.stack || "no stack"));
             let errorMsg = document.getElementById("odf-file-error-message");
             if (errorMsg) {
                 errorMsg.style.display = "block";
