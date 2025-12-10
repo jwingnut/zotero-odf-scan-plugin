@@ -81,19 +81,32 @@ var Zotero_ODFScan = new function() {
             window.close();
         });
 
-        // Set up file chooser button handlers
-        document.getElementById("choose-input-file").addEventListener("command", function() {
-            Zotero_ODFScan.chooseInputFile();
+        // Set up file chooser button handlers (use 'click' like Zotero's RTF Scan)
+        document.getElementById("choose-input-file").addEventListener("click", async function(ev) {
+            ev.stopPropagation();
+            Zotero.debug("[ODF Scan] Choose input file button clicked");
+            try {
+                await Zotero_ODFScan.chooseInputFile();
+            } catch (e) {
+                Zotero.logError("[ODF Scan] Error in chooseInputFile: " + e);
+            }
         });
 
-        document.getElementById("choose-output-file").addEventListener("command", function() {
-            Zotero_ODFScan.chooseOutputFile();
+        document.getElementById("choose-output-file").addEventListener("click", async function(ev) {
+            ev.stopPropagation();
+            Zotero.debug("[ODF Scan] Choose output file button clicked");
+            try {
+                await Zotero_ODFScan.chooseOutputFile();
+            } catch (e) {
+                Zotero.logError("[ODF Scan] Error in chooseOutputFile: " + e);
+            }
         });
 
         // Set up radio button handlers
         const radioButtons = document.querySelectorAll('input[name="file-type"]');
         radioButtons.forEach(function(radio) {
             radio.addEventListener("change", function() {
+                Zotero.debug("[ODF Scan] File type changed to: " + this.value);
                 Zotero_ODFScan.fileTypeSwitch(this.value);
             });
         });
@@ -162,38 +175,57 @@ var Zotero_ODFScan = new function() {
    * Called to select the file to be processed
    */
     this.chooseInputFile = async function () {
-    // Hide any error message
-        let errorMsg = document.getElementById("odf-file-error-message");
-        if (errorMsg) {
-            errorMsg.style.display = "none";
+        Zotero.debug("[ODF Scan] chooseInputFile called");
+
+        // Verify FilePicker is available
+        if (!FilePicker) {
+            Zotero.logError("[ODF Scan] FilePicker not available");
+            return;
         }
 
-        // get file type
-        let fileType = Zotero.Prefs.get("ODFScan.fileType");
-        // display file picker
+        // Hide any error message
+        let errorMsg = document.getElementById("odf-file-error-message");
+        if (errorMsg) {
+            errorMsg.hidden = true;
+        }
+
+        // Get file type (default to "odf" if not set)
+        let fileType = Zotero.Prefs.get("ODFScan.fileType") || "odf";
+        Zotero.debug("[ODF Scan] File type: " + fileType);
+
+        // Display file picker
         let fp = new FilePicker();
         fp.init(window, getString("odf-scan-open-title"), fp.modeOpen);
 
         let fileExt = fileType;
         if (fileType === "odf") {
             fileExt = "odt";
-        } else {
-            fp.appendFilters(fp.filterAll);
         }
+        fp.appendFilters(fp.filterAll);
         fp.appendFilter(getString("odf-scan-file-type-" + fileType), "*." + fileExt);
 
         // Set directory if possible
-        let outputMode = Zotero.Prefs.get("ODFScan.outputMode");
+        let outputMode = Zotero.Prefs.get("ODFScan.outputMode") || "tocitations";
         let inputPath = Zotero.Prefs.get("ODFScan."+fileType+".lastInputFile" + outputMode);
         if (inputPath) {
-            if (!inputFile) {
-                inputFile = Zotero.File.pathToFile(inputPath);
+            try {
+                if (!inputFile) {
+                    inputFile = Zotero.File.pathToFile(inputPath);
+                }
+                if (inputFile && inputFile.parent) {
+                    fp.displayDirectory = inputFile.parent;
+                }
+            } catch (e) {
+                Zotero.debug("[ODF Scan] Could not set display directory: " + e);
             }
-            fp.displayDirectory = inputFile.parent;
         }
 
+        Zotero.debug("[ODF Scan] Showing file picker...");
         let rv = await fp.show();
+        Zotero.debug("[ODF Scan] File picker returned: " + rv);
+
         if (rv == fp.returnOK || rv == fp.returnReplace) {
+            Zotero.debug("[ODF Scan] Selected file: " + fp.file);
             inputFile = Zotero.File.pathToFile(fp.file);
             _updatePath();
         }
@@ -203,15 +235,25 @@ var Zotero_ODFScan = new function() {
    * Called to select the output file
    */
     this.chooseOutputFile = async function() {
-        let fileType = Zotero.Prefs.get("ODFScan.fileType");
-        let outputMode = Zotero.Prefs.get("ODFScan.outputMode");
+        Zotero.debug("[ODF Scan] chooseOutputFile called");
+
+        // Verify FilePicker is available
+        if (!FilePicker) {
+            Zotero.logError("[ODF Scan] FilePicker not available");
+            return;
+        }
+
+        let fileType = Zotero.Prefs.get("ODFScan.fileType") || "odf";
+        let outputMode = Zotero.Prefs.get("ODFScan.outputMode") || "tocitations";
         let fileExt = fileType;
         if (fileType === "odf") {
             fileExt = "odt";
         }
+
         let fp = new FilePicker();
         fp.init(window, getString("odf-scan-save-title"), fp.modeSave);
         fp.appendFilter(getString("odf-scan-file-type-" + fileType), "*." + fileExt);
+
         if (inputFile) {
             let leafName = inputFile.leafName;
             let dotIndex = leafName.lastIndexOf(".");
@@ -236,17 +278,26 @@ var Zotero_ODFScan = new function() {
         }
 
         // Set directory if possible
-        outputMode = Zotero.Prefs.get("ODFScan.outputMode");
         let outputPath = Zotero.Prefs.get("ODFScan."+fileType+".lastOutputFile" + outputMode);
         if (outputPath) {
-            if (!outputFile) {
-                outputFile = Zotero.File.pathToFile(outputPath);
+            try {
+                if (!outputFile) {
+                    outputFile = Zotero.File.pathToFile(outputPath);
+                }
+                if (outputFile && outputFile.parent) {
+                    fp.displayDirectory = outputFile.parent;
+                }
+            } catch (e) {
+                Zotero.debug("[ODF Scan] Could not set display directory: " + e);
             }
-            fp.displayDirectory = outputFile.parent;
         }
 
+        Zotero.debug("[ODF Scan] Showing save file picker...");
         let rv = await fp.show();
+        Zotero.debug("[ODF Scan] File picker returned: " + rv);
+
         if (rv == fp.returnOK || rv == fp.returnReplace) {
+            Zotero.debug("[ODF Scan] Selected output file: " + fp.file);
             outputFile = Zotero.File.pathToFile(fp.file);
             _updatePath();
         }
