@@ -1,124 +1,135 @@
 <?xml version="1.0"?>
-<!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml"
-      xmlns:html="http://www.w3.org/1999/xhtml">
-<head>
-    <meta charset="utf-8"/>
-    <title data-l10n-id="odf-scan-title">ODF Scan</title>
 
-    <!-- Stylesheets -->
-    <link rel="stylesheet" href="chrome://global/skin/" type="text/css"/>
-    <link rel="stylesheet" href="chrome://zotero/skin/zotero.css" type="text/css"/>
-    <link rel="stylesheet" href="chrome://odf-scan/content/rtfScan.css" type="text/css"/>
+<?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+<?xml-stylesheet href="chrome://zotero/skin/zotero.css" type="text/css"?>
+<?xml-stylesheet href="chrome://odf-scan/content/rtfScan.css" type="text/css"?>
 
-    <!-- Scripts -->
-    <script src="chrome://zotero/content/include.js"></script>
-    <script src="chrome://odf-scan/content/lib/jszip.min.js"></script>
-    <script src="chrome://odf-scan/content/rtfScan.js"></script>
-</head>
-<body>
-    <div id="wizard-container">
+<window id="odf-scan-wizard-window"
+        xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+        xmlns:html="http://www.w3.org/1999/xhtml"
+        data-l10n-id="odf-scan-title"
+        title="ODF Scan"
+        width="700"
+        height="580"
+        onload="Zotero_ODFScan.init()">
+
+    <linkset>
+        <html:link rel="localization" href="odf-scan/odf-scan.ftl"/>
+    </linkset>
+
+    <script>
+        Services.scriptloader.loadSubScript("chrome://zotero/content/include.js", this);
+        Services.scriptloader.loadSubScript("chrome://odf-scan/content/lib/jszip.min.js", this);
+        Services.scriptloader.loadSubScript("chrome://odf-scan/content/rtfScan.js", this);
+    </script>
+
+    <vbox id="wizard-container" flex="1">
         <!-- Intro Page -->
-        <div id="intro-page" class="wizard-page active">
-            <h2 data-l10n-id="odf-scan-intro-page-label">Introduction</h2>
+        <vbox id="intro-page" class="wizard-page">
+            <html:h2 data-l10n-id="odf-scan-intro-page-label">Introduction</html:h2>
 
             <!-- File Type Selection -->
-            <fieldset>
-                <legend data-l10n-id="odf-scan-file-type-label">File type</legend>
-                <div class="radio-group" id="file-type-selector">
-                    <div>
-                        <input type="radio"
-                               id="file-type-selector-odf-tocitations"
-                               name="file-type"
-                               value="odf-tocitations"
-                               onclick="Zotero_ODFScan.fileTypeSwitch(this.value);"/>
-                        <label for="file-type-selector-odf-tocitations" data-l10n-id="odf-scan-odf-to-citations">ODF (to citations)</label>
-                    </div>
-                    <div>
-                        <input type="radio"
-                               id="file-type-selector-odf-tomarkers"
-                               name="file-type"
-                               value="odf-tomarkers"
-                               onclick="Zotero_ODFScan.fileTypeSwitch(this.value);"/>
-                        <label for="file-type-selector-odf-tomarkers" data-l10n-id="odf-scan-odf-to-markers">ODF (to markers)</label>
-                    </div>
-                </div>
-            </fieldset>
+            <groupbox>
+                <label data-l10n-id="odf-scan-file-type-label" value="File type"/>
+                <hbox id="file-type-selector" align="center">
+                    <hbox align="center">
+                        <html:input type="radio"
+                                    id="file-type-selector-odf-tocitations"
+                                    name="file-type"
+                                    value="odf-tocitations"/>
+                        <label for="file-type-selector-odf-tocitations"
+                               data-l10n-id="odf-scan-odf-to-citations"
+                               value="ODF (to citations)"
+                               control="file-type-selector-odf-tocitations"/>
+                    </hbox>
+                    <hbox align="center" style="margin-left: 16px;">
+                        <html:input type="radio"
+                                    id="file-type-selector-odf-tomarkers"
+                                    name="file-type"
+                                    value="odf-tomarkers"/>
+                        <label for="file-type-selector-odf-tomarkers"
+                               data-l10n-id="odf-scan-odf-to-markers"
+                               value="ODF (to markers)"
+                               control="file-type-selector-odf-tomarkers"/>
+                    </hbox>
+                </hbox>
+            </groupbox>
 
             <!-- File Type Description for ODF -->
-            <div id="file-type-description-odf" class="file-type-description">
-                <p data-l10n-id="odf-scan-intro-description-start">This tool scans the ODF document for formatted citations and converts them to Zotero citations. For more information, see </p>
-                <p>
-                    <a href="https://zotero-odf-scan.github.io/zotero-odf-scan/"
-                       data-l10n-id="odf-scan-intro-link"
-                       class="zotero-text-link">the ODF Scan documentation</a>
-                </p>
-                <div class="example-markers">
-                    <p style="color:black;margin:0 0 0.25em 2em;">{ *See* | Smith, A Title (2003) | | | zotero://select/items/0_AXVB9R }</p>
-                    <p style="margin:0 0 0.75em 4em;font-style:italic;" data-l10n-id="odf-scan-intro-example1">Example with prefix</p>
-                    <p style="color:black;margin:0 0 0.25em 2em;">{ | Smith, A Title (2003) | p. 33 | (quoting Jones) | zotero://select/items/0_AXVB9R }</p>
-                    <p style="margin:0 0 0.75em 4em;font-style:italic;" data-l10n-id="odf-scan-intro-example2">Example with locator and suffix</p>
-                    <p style="color:black;margin:0 0 0.25em 2em;">{ | -Smith, A Title (2003) | | | zotero://select/items/0_AXVB9R }</p>
-                    <p style="margin:0 0 0 4em;font-style:italic;" data-l10n-id="odf-scan-intro-example3">Example with suppress-author</p>
-                </div>
-                <p style="padding-top:1em" data-l10n-id="odf-scan-intro-description2">Select the input file and output file below, then click Next.</p>
-            </div>
+            <vbox id="file-type-description-odf" class="file-type-description">
+                <description data-l10n-id="odf-scan-intro-description-start">This tool scans the ODF document for formatted citations and converts them to Zotero citations. For more information, see</description>
+                <html:p>
+                    <html:a href="https://zotero-odf-scan.github.io/zotero-odf-scan/"
+                            data-l10n-id="odf-scan-intro-link"
+                            class="zotero-text-link">the ODF Scan documentation</html:a>
+                </html:p>
+                <vbox class="example-markers">
+                    <description style="color:black;margin:0 0 0.25em 2em;">{ *See* | Smith, A Title (2003) | | | zotero://select/items/0_AXVB9R }</description>
+                    <description style="margin:0 0 0.75em 4em;font-style:italic;" data-l10n-id="odf-scan-intro-example1">Example with prefix</description>
+                    <description style="color:black;margin:0 0 0.25em 2em;">{ | Smith, A Title (2003) | p. 33 | (quoting Jones) | zotero://select/items/0_AXVB9R }</description>
+                    <description style="margin:0 0 0.75em 4em;font-style:italic;" data-l10n-id="odf-scan-intro-example2">Example with locator and suffix</description>
+                    <description style="color:black;margin:0 0 0.25em 2em;">{ | -Smith, A Title (2003) | | | zotero://select/items/0_AXVB9R }</description>
+                    <description style="margin:0 0 0 4em;font-style:italic;" data-l10n-id="odf-scan-intro-example3">Example with suppress-author</description>
+                </vbox>
+                <description style="padding-top:1em" data-l10n-id="odf-scan-intro-description2">Select the input file and output file below, then click Next.</description>
+            </vbox>
 
             <!-- Input File Selection -->
-            <fieldset>
-                <legend data-l10n-id="odf-scan-input-file">Input File</legend>
-                <div class="file-picker-row">
-                    <input type="text"
-                           id="input-path"
-                           readonly="readonly"
-                           data-l10n-id="odf-scan-no-file-selected"
-                           value="[None Selected]"/>
+            <groupbox>
+                <label data-l10n-id="odf-scan-input-file" value="Input File"/>
+                <hbox align="center" class="file-picker-row">
+                    <html:input type="text"
+                                id="input-path"
+                                readonly="readonly"
+                                flex="1"
+                                data-l10n-id="odf-scan-no-file-selected"
+                                value="[None Selected]"/>
                     <button id="choose-input-file"
-                            onclick="Zotero_ODFScan.chooseInputFile()"
-                            data-l10n-id="odf-scan-choose-file">Choose File</button>
-                </div>
-                <span id="odf-file-error-message"
-                      style="color:red; display:none;"
-                      data-l10n-id="odf-scan-file-error">There was an error processing this file</span>
-            </fieldset>
+                            label="Choose File"
+                            data-l10n-id="odf-scan-choose-file"/>
+                </hbox>
+                <description id="odf-file-error-message"
+                             style="color:red; display:none;"
+                             data-l10n-id="odf-scan-file-error">There was an error processing this file</description>
+            </groupbox>
 
             <!-- Output File Selection -->
-            <fieldset>
-                <legend data-l10n-id="odf-scan-output-file">Output File</legend>
-                <div class="file-picker-row">
-                    <input type="text"
-                           id="output-path"
-                           readonly="readonly"
-                           data-l10n-id="odf-scan-no-file-selected"
-                           value="[None Selected]"/>
+            <groupbox>
+                <label data-l10n-id="odf-scan-output-file" value="Output File"/>
+                <hbox align="center" class="file-picker-row">
+                    <html:input type="text"
+                                id="output-path"
+                                readonly="readonly"
+                                flex="1"
+                                data-l10n-id="odf-scan-no-file-selected"
+                                value="[None Selected]"/>
                     <button id="choose-output-file"
-                            onclick="Zotero_ODFScan.chooseOutputFile()"
-                            data-l10n-id="odf-scan-choose-file">Choose File</button>
-                </div>
-            </fieldset>
-        </div>
+                            label="Choose File"
+                            data-l10n-id="odf-scan-choose-file"/>
+                </hbox>
+            </groupbox>
+        </vbox>
 
         <!-- Scan Page -->
-        <div id="scan-page" class="wizard-page">
-            <h2 data-l10n-id="odf-scan-scan-page-label">Scanning</h2>
-            <p data-l10n-id="odf-scan-scan-description">Scanning document for citations...</p>
-            <progress id="scan-page-progress-indicator" max="100"></progress>
-        </div>
+        <vbox id="scan-page" class="wizard-page" hidden="true">
+            <html:h2 data-l10n-id="odf-scan-scan-page-label">Scanning</html:h2>
+            <description data-l10n-id="odf-scan-scan-description">Scanning document for citations...</description>
+            <html:progress id="scan-page-progress-indicator" max="100"/>
+        </vbox>
 
         <!-- Complete Page -->
-        <div id="complete-page" class="wizard-page">
-            <h2 data-l10n-id="odf-scan-complete-page-label">Complete</h2>
-            <p data-l10n-id="odf-scan-complete-description">The scan has been completed successfully. Your output file has been created.</p>
-        </div>
-    </div>
+        <vbox id="complete-page" class="wizard-page" hidden="true">
+            <html:h2 data-l10n-id="odf-scan-complete-page-label">Complete</html:h2>
+            <description data-l10n-id="odf-scan-complete-description">The scan has been completed successfully. Your output file has been created.</description>
+        </vbox>
+    </vbox>
 
     <!-- Wizard Navigation Buttons -->
-    <div id="wizard-buttons">
-        <button id="back-button" data-l10n-id="odf-scan-back-button">Back</button>
-        <div class="spacer"></div>
-        <button id="cancel-button" data-l10n-id="odf-scan-cancel-button">Cancel</button>
-        <button id="next-button" data-l10n-id="odf-scan-next-button" class="primary">Next</button>
-        <button id="finish-button" data-l10n-id="odf-scan-finish-button" class="primary" style="display: none;">Finish</button>
-    </div>
-</body>
-</html>
+    <hbox id="wizard-buttons" align="center">
+        <button id="back-button" label="Back" data-l10n-id="odf-scan-back-button"/>
+        <spacer flex="1"/>
+        <button id="cancel-button" label="Cancel" data-l10n-id="odf-scan-cancel-button"/>
+        <button id="next-button" label="Next" class="primary" data-l10n-id="odf-scan-next-button"/>
+        <button id="finish-button" label="Finish" class="primary" hidden="true" data-l10n-id="odf-scan-finish-button"/>
+    </hbox>
+</window>

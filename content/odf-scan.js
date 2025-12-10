@@ -248,14 +248,14 @@ if (!Zotero.ODFScan) {
             this.pages.forEach(page => {
                 const pageElement = document.getElementById(`${page}-page`);
                 if (pageElement) {
-                    pageElement.classList.remove("active");
+                    pageElement.hidden = true;
                 }
             });
 
             // Show the target page
             const targetPage = document.getElementById(`${pageId}-page`);
             if (targetPage) {
-                targetPage.classList.add("active");
+                targetPage.hidden = false;
             }
 
             this.currentPage = pageId;
@@ -319,13 +319,13 @@ if (!Zotero.ODFScan) {
             // Next/Finish button logic
             if (currentIndex === this.pages.length - 1) {
                 // Last page: show Finish button, hide Next
-                nextButton.style.display = "none";
-                finishButton.style.display = "";
+                nextButton.hidden = true;
+                finishButton.hidden = false;
                 finishButton.disabled = false;
             } else {
                 // Other pages: show Next button, hide Finish
-                nextButton.style.display = "";
-                finishButton.style.display = "none";
+                nextButton.hidden = false;
+                finishButton.hidden = true;
                 nextButton.disabled = !this.canAdvanceState;
             }
         }

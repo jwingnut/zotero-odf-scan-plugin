@@ -28,15 +28,14 @@
  * Migrated for Zotero 7 XHTML dialogs
  */
 
-// Import FilePicker for Zotero 7
-var { FilePicker } = ChromeUtils.importESModule("chrome://zotero/content/modules/filePicker.mjs");
-
 /**
  * Dialog controller for ODF Scan wizard
  * @namespace
  */
 // eslint-disable-next-line no-var
 var Zotero_ODFScan = new function() {
+    // FilePicker will be imported lazily when needed
+    let FilePicker = null;
     let inputFile = null, outputFile = null;
 
     // Use the new getString helper from Zotero.ODFScan
@@ -49,29 +48,54 @@ var Zotero_ODFScan = new function() {
 
     /**
      * Initialize the dialog
-     * Called when dialog loads
+     * Called when dialog loads (via onload in XHTML)
      */
     this.init = function() {
         Zotero.debug("[ODF Scan Dialog] Initializing");
 
+        // Import FilePicker lazily now that we're in the window context
+        try {
+            ({ FilePicker } = ChromeUtils.importESModule("chrome://zotero/content/modules/filePicker.mjs"));
+            Zotero.debug("[ODF Scan Dialog] FilePicker imported successfully");
+        } catch (e) {
+            Zotero.logError("[ODF Scan Dialog] Failed to import FilePicker: " + e);
+        }
+
         // Get WizardController reference
         WizardController = Zotero.ODFScan.WizardController;
 
-        // Set up wizard navigation button handlers
-        document.getElementById("back-button").addEventListener("click", function() {
+        // Set up wizard navigation button handlers (use "command" for XUL buttons)
+        document.getElementById("back-button").addEventListener("command", function() {
             WizardController.rewind();
         });
 
-        document.getElementById("next-button").addEventListener("click", function() {
+        document.getElementById("next-button").addEventListener("command", function() {
             Zotero_ODFScan.advance();
         });
 
-        document.getElementById("finish-button").addEventListener("click", function() {
+        document.getElementById("finish-button").addEventListener("command", function() {
             window.close();
         });
 
-        document.getElementById("cancel-button").addEventListener("click", function() {
+        document.getElementById("cancel-button").addEventListener("command", function() {
             window.close();
+        });
+
+        // Set up file chooser button handlers
+        document.getElementById("choose-input-file").addEventListener("command", function() {
+            Zotero_ODFScan.chooseInputFile();
+        });
+
+        document.getElementById("choose-output-file").addEventListener("command", function() {
+            Zotero_ODFScan.chooseOutputFile();
+        });
+
+        // Set up radio button handlers
+        const radioButtons = document.querySelectorAll('input[name="file-type"]');
+        radioButtons.forEach(function(radio) {
+            radio.addEventListener("change", function() {
+                Zotero_ODFScan.fileTypeSwitch(this.value);
+            });
         });
 
         // Initialize the intro page
@@ -79,6 +103,8 @@ var Zotero_ODFScan = new function() {
 
         // Update button states
         WizardController.updateButtons();
+
+        Zotero.debug("[ODF Scan Dialog] Initialization complete");
     };
 
     /**
@@ -938,7 +964,4 @@ var Zotero_ODFScan = new function() {
 
 };
 
-// Initialize dialog when DOM is loaded
-window.addEventListener("DOMContentLoaded", function() {
-    Zotero_ODFScan.init();
-});
+// Note: init() is called via onload="Zotero_ODFScan.init()" in the XHTML window element

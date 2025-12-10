@@ -1,13 +1,8 @@
 /* ODF Scan Wizard Styles for Zotero 7 */
 
-/* Body and container */
-body {
-    margin: 0;
+/* Window and container */
+window {
     padding: 16px;
-    width: 700px;
-    height: 580px;
-    box-sizing: border-box;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
 }
 
 #wizard-container {
@@ -15,13 +10,9 @@ body {
     overflow-y: auto;
 }
 
-/* Wizard page visibility */
+/* Wizard page styling */
 .wizard-page {
-    display: none;
-}
-
-.wizard-page.active {
-    display: block;
+    padding: 8px;
 }
 
 /* Wizard page headings */
