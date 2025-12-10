@@ -1,0 +1,175 @@
+/* ODF Scan Wizard Styles for Zotero 7 */
+
+/* Window and container */
+window {
+    padding: 16px;
+}
+
+#wizard-container {
+    height: calc(100% - 60px);
+    overflow-y: auto;
+}
+
+/* Wizard page styling */
+.wizard-page {
+    padding: 8px;
+}
+
+/* Wizard page headings */
+.wizard-page h2 {
+    margin: 0 0 16px 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+/* Fieldsets */
+fieldset {
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 12px;
+    margin: 0 0 16px 0;
+}
+
+legend {
+    font-weight: 600;
+    padding: 0 4px;
+}
+
+/* Radio group */
+.radio-group {
+    display: flex;
+    gap: 16px;
+}
+
+.radio-group > div {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.radio-group input[type="radio"] {
+    margin: 0;
+}
+
+.radio-group label {
+    margin: 0;
+    cursor: pointer;
+}
+
+/* File type description */
+.file-type-description {
+    margin-bottom: 16px;
+    padding: 12px;
+    background-color: #f5f5f5;
+    border-radius: 4px;
+}
+
+.file-type-description p {
+    margin: 0 0 8px 0;
+}
+
+.file-type-description p:last-child {
+    margin-bottom: 0;
+}
+
+.example-markers {
+    margin-top: 8px;
+}
+
+/* File picker row */
+.file-picker-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.file-picker-row input[type="text"] {
+    flex: 1;
+    padding: 6px 8px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    background-color: #f9f9f9;
+}
+
+.file-picker-row button {
+    padding: 6px 12px;
+    white-space: nowrap;
+}
+
+/* Error message */
+#odf-file-error-message {
+    display: block;
+    margin-top: 8px;
+    font-size: 13px;
+}
+
+#odf-file-error-message[hidden] {
+    display: none !important;
+}
+
+/* Progress bar */
+progress {
+    width: 100%;
+    height: 24px;
+    margin: 16px 0;
+}
+
+/* Wizard buttons container */
+#wizard-buttons {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background-color: #f0f0f0;
+    border-top: 1px solid #ccc;
+}
+
+#wizard-buttons .spacer {
+    flex: 1;
+}
+
+#wizard-buttons button {
+    padding: 6px 16px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    background-color: #fff;
+    cursor: pointer;
+}
+
+#wizard-buttons button:hover {
+    background-color: #f5f5f5;
+}
+
+#wizard-buttons button.primary {
+    background-color: #0060df;
+    color: white;
+    border-color: #0060df;
+}
+
+#wizard-buttons button.primary:hover {
+    background-color: #0250bb;
+}
+
+#wizard-buttons button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Link styling */
+a.zotero-text-link {
+    color: #0060df;
+    text-decoration: none;
+}
+
+a.zotero-text-link:hover {
+    text-decoration: underline;
+}
+
+/* Paragraphs */
+p {
+    line-height: 1.5;
+}
