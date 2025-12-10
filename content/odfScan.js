@@ -43,8 +43,113 @@ var Zotero_ODFScan = new function() {
         return Zotero.ODFScan.getString(key, params);
     }
 
-    // Get WizardController reference (will be set on init)
-    let WizardController = null;
+    /**
+     * Wizard Controller - defined here so it has access to dialog's document
+     * Manages navigation between wizard pages
+     */
+    const WizardController = {
+        currentPage: "intro",
+        pages: ["intro", "scan", "complete"],
+        canAdvanceState: false,
+
+        /**
+         * Navigate to a specific page
+         * @param {string} pageId - The page to navigate to ('intro', 'scan', 'complete')
+         */
+        goToPage: function(pageId) {
+            if (!this.pages.includes(pageId)) {
+                Zotero.debug(`[ODF Scan] Invalid page ID: ${pageId}`);
+                return;
+            }
+
+            Zotero.debug(`[ODF Scan] Navigating to page: ${pageId}`);
+
+            // Hide all pages
+            this.pages.forEach(page => {
+                const pageElement = document.getElementById(`${page}-page`);
+                if (pageElement) {
+                    pageElement.hidden = true;
+                }
+            });
+
+            // Show the target page
+            const targetPage = document.getElementById(`${pageId}-page`);
+            if (targetPage) {
+                targetPage.hidden = false;
+            }
+
+            this.currentPage = pageId;
+            this.updateButtons();
+        },
+
+        /**
+         * Advance to the next page
+         */
+        advance: function() {
+            const currentIndex = this.pages.indexOf(this.currentPage);
+            if (currentIndex < this.pages.length - 1) {
+                this.goToPage(this.pages[currentIndex + 1]);
+            }
+        },
+
+        /**
+         * Go back to the previous page
+         */
+        rewind: function() {
+            const currentIndex = this.pages.indexOf(this.currentPage);
+            if (currentIndex > 0) {
+                this.goToPage(this.pages[currentIndex - 1]);
+            }
+        },
+
+        /**
+         * Check if the wizard can advance from the current page
+         * @returns {boolean} True if can advance
+         */
+        canAdvance: function() {
+            return this.canAdvanceState;
+        },
+
+        /**
+         * Set whether the wizard can advance
+         * @param {boolean} value - True to enable advance
+         */
+        setCanAdvance: function(value) {
+            this.canAdvanceState = value;
+            this.updateButtons();
+        },
+
+        /**
+         * Update button states based on current page
+         */
+        updateButtons: function() {
+            const backButton = document.getElementById("back-button");
+            const nextButton = document.getElementById("next-button");
+            const finishButton = document.getElementById("finish-button");
+
+            if (!backButton || !nextButton || !finishButton) {
+                return;
+            }
+
+            const currentIndex = this.pages.indexOf(this.currentPage);
+
+            // Back button: enabled on all pages except first
+            backButton.disabled = currentIndex === 0;
+
+            // Next/Finish button logic
+            if (currentIndex === this.pages.length - 1) {
+                // Last page: show Finish button, hide Next
+                nextButton.hidden = true;
+                finishButton.hidden = false;
+                finishButton.disabled = false;
+            } else {
+                // Other pages: show Next button, hide Finish
+                nextButton.hidden = false;
+                finishButton.hidden = true;
+                nextButton.disabled = !this.canAdvanceState;
+            }
+        }
+    };
 
     /**
      * Initialize the dialog
@@ -60,9 +165,6 @@ var Zotero_ODFScan = new function() {
         } catch (e) {
             Zotero.logError("[ODF Scan Dialog] Failed to import FilePicker: " + e);
         }
-
-        // Get WizardController reference
-        WizardController = Zotero.ODFScan.WizardController;
 
         // Set up wizard navigation button handlers (use "command" for XUL buttons)
         document.getElementById("back-button").addEventListener("command", function() {
@@ -277,22 +379,25 @@ var Zotero_ODFScan = new function() {
             fp.defaultString = "Untitled." + fileExt;
         }
 
-        // Set directory if possible
+        // Set directory - prefer last output location, fall back to input file's directory
         let outputPath = Zotero.Prefs.get("ODFScan."+fileType+".lastOutputFile" + outputMode);
-        if (outputPath) {
-            try {
-                if (!outputFile) {
-                    outputFile = Zotero.File.pathToFile(outputPath);
+        try {
+            if (outputPath) {
+                let prevOutputFile = Zotero.File.pathToFile(outputPath);
+                if (prevOutputFile && prevOutputFile.parent) {
+                    fp.displayDirectory = prevOutputFile.parent;
+                    Zotero.debug("[ODF Scan] Set display directory from previous output: " + prevOutputFile.parent.path);
                 }
-                if (outputFile && outputFile.parent) {
-                    fp.displayDirectory = outputFile.parent;
-                }
-            } catch (e) {
-                Zotero.debug("[ODF Scan] Could not set display directory: " + e);
+            } else if (inputFile && inputFile.parent) {
+                // Fall back to input file's directory
+                fp.displayDirectory = inputFile.parent;
+                Zotero.debug("[ODF Scan] Set display directory from input file: " + inputFile.parent.path);
             }
+        } catch (e) {
+            Zotero.debug("[ODF Scan] Could not set display directory: " + e);
         }
 
-        Zotero.debug("[ODF Scan] Showing save file picker...");
+        Zotero.debug("[ODF Scan] Showing save file picker with defaultString: " + fp.defaultString);
         let rv = await fp.show();
         Zotero.debug("[ODF Scan] File picker returned: " + rv);
 
@@ -308,20 +413,45 @@ var Zotero_ODFScan = new function() {
    * @private
    */
     function _updatePath() {
+        Zotero.debug("[ODF Scan] _updatePath called");
+        Zotero.debug("[ODF Scan] inputFile: " + (inputFile ? inputFile.path : "null"));
+        Zotero.debug("[ODF Scan] outputFile: " + (outputFile ? outputFile.path : "null"));
+
         WizardController.setCanAdvance(inputFile && outputFile);
 
+        const inputPathEl = document.getElementById("input-path");
+        const outputPathEl = document.getElementById("output-path");
+        const chooseOutputBtn = document.getElementById("choose-output-file");
+
+        Zotero.debug("[ODF Scan] inputPathEl: " + inputPathEl);
+        Zotero.debug("[ODF Scan] outputPathEl: " + outputPathEl);
+
         if (inputFile && inputFile.path) {
-            document.getElementById("input-path").value = inputFile.path;
-            document.getElementById("choose-output-file").disabled = false;
+            if (inputPathEl) {
+                inputPathEl.value = inputFile.path;
+                Zotero.debug("[ODF Scan] Set input path to: " + inputFile.path);
+            }
+            if (chooseOutputBtn) {
+                chooseOutputBtn.disabled = false;
+            }
         } else {
-            document.getElementById("input-path").value = getString("odf-scan-file-none-selected-label");
-            document.getElementById("choose-output-file").disabled = true;
+            if (inputPathEl) {
+                inputPathEl.value = getString("odf-scan-file-none-selected-label") || "[None Selected]";
+            }
+            if (chooseOutputBtn) {
+                chooseOutputBtn.disabled = true;
+            }
         }
 
-        if (outputFile) {
-            document.getElementById("output-path").value = outputFile.path;
+        if (outputFile && outputFile.path) {
+            if (outputPathEl) {
+                outputPathEl.value = outputFile.path;
+                Zotero.debug("[ODF Scan] Set output path to: " + outputFile.path);
+            }
         } else {
-            document.getElementById("output-path").value = getString("odf-scan-file-none-selected-label");
+            if (outputPathEl) {
+                outputPathEl.value = getString("odf-scan-file-none-selected-label") || "[None Selected]";
+            }
         }
     }
 

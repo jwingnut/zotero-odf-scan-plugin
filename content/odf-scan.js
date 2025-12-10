@@ -163,7 +163,7 @@ if (!Zotero.ODFScan) {
         Zotero.debug("[ODF Scan] Opening ODF Scan dialog");
 
         try {
-            const dialogURL = "chrome://odf-scan/content/rtfScan.xhtml";
+            const dialogURL = "chrome://odf-scan/content/odfScan.xhtml";
             const dialogFeatures = "chrome,centerscreen,resizable=yes,width=700,height=580";
 
             parentWindow.openDialog(
@@ -220,114 +220,6 @@ if (!Zotero.ODFScan) {
             Zotero.logError("[ODF Scan] Failed to install translator: " + e);
             // Don't throw - translator installation failure shouldn't prevent plugin from loading
             return false;
-        }
-    };
-
-    /**
-   * Wizard Controller
-   * Manages navigation between wizard pages
-   */
-    Zotero.ODFScan.WizardController = {
-        currentPage: "intro",
-        pages: ["intro", "scan", "complete"],
-        canAdvanceState: false,
-
-        /**
-     * Navigate to a specific page
-     * @param {string} pageId - The page to navigate to ('intro', 'scan', 'complete')
-     */
-        goToPage: function(pageId) {
-            if (!this.pages.includes(pageId)) {
-                Zotero.debug(`[ODF Scan] Invalid page ID: ${pageId}`);
-                return;
-            }
-
-            Zotero.debug(`[ODF Scan] Navigating to page: ${pageId}`);
-
-            // Hide all pages
-            this.pages.forEach(page => {
-                const pageElement = document.getElementById(`${page}-page`);
-                if (pageElement) {
-                    pageElement.hidden = true;
-                }
-            });
-
-            // Show the target page
-            const targetPage = document.getElementById(`${pageId}-page`);
-            if (targetPage) {
-                targetPage.hidden = false;
-            }
-
-            this.currentPage = pageId;
-            this.updateButtons();
-        },
-
-        /**
-     * Advance to the next page
-     */
-        advance: function() {
-            const currentIndex = this.pages.indexOf(this.currentPage);
-            if (currentIndex < this.pages.length - 1) {
-                this.goToPage(this.pages[currentIndex + 1]);
-            }
-        },
-
-        /**
-     * Go back to the previous page
-     */
-        rewind: function() {
-            const currentIndex = this.pages.indexOf(this.currentPage);
-            if (currentIndex > 0) {
-                this.goToPage(this.pages[currentIndex - 1]);
-            }
-        },
-
-        /**
-     * Check if the wizard can advance from the current page
-     * @returns {boolean} True if can advance
-     */
-        canAdvance: function() {
-            return this.canAdvanceState;
-        },
-
-        /**
-     * Set whether the wizard can advance
-     * @param {boolean} value - True to enable advance
-     */
-        setCanAdvance: function(value) {
-            this.canAdvanceState = value;
-            this.updateButtons();
-        },
-
-        /**
-     * Update button states based on current page
-     */
-        updateButtons: function() {
-            const backButton = document.getElementById("back-button");
-            const nextButton = document.getElementById("next-button");
-            const finishButton = document.getElementById("finish-button");
-
-            if (!backButton || !nextButton || !finishButton) {
-                return;
-            }
-
-            const currentIndex = this.pages.indexOf(this.currentPage);
-
-            // Back button: enabled on all pages except first
-            backButton.disabled = currentIndex === 0;
-
-            // Next/Finish button logic
-            if (currentIndex === this.pages.length - 1) {
-                // Last page: show Finish button, hide Next
-                nextButton.hidden = true;
-                finishButton.hidden = false;
-                finishButton.disabled = false;
-            } else {
-                // Other pages: show Next button, hide Finish
-                nextButton.hidden = false;
-                finishButton.hidden = true;
-                nextButton.disabled = !this.canAdvanceState;
-            }
         }
     };
 

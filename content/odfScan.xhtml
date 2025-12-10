@@ -2,7 +2,7 @@
 
 <?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
 <?xml-stylesheet href="chrome://zotero/skin/zotero.css" type="text/css"?>
-<?xml-stylesheet href="chrome://odf-scan/content/rtfScan.css" type="text/css"?>
+<?xml-stylesheet href="chrome://odf-scan/content/odfScan.css" type="text/css"?>
 
 <window id="odf-scan-wizard-window"
         xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
@@ -20,7 +20,7 @@
     <script>
         Services.scriptloader.loadSubScript("chrome://zotero/content/include.js", this);
         Services.scriptloader.loadSubScript("chrome://odf-scan/content/lib/jszip.min.js", this);
-        Services.scriptloader.loadSubScript("chrome://odf-scan/content/rtfScan.js", this);
+        Services.scriptloader.loadSubScript("chrome://odf-scan/content/odfScan.js", this);
     </script>
 
     <vbox id="wizard-container" flex="1">
@@ -78,11 +78,11 @@
             <groupbox>
                 <label data-l10n-id="odf-scan-input-file" value="Input File"/>
                 <hbox align="center" class="file-picker-row">
-                    <html:input type="text"
+                    <html:input native="true"
+                                type="text"
                                 id="input-path"
-                                readonly="readonly"
+                                readonly="true"
                                 flex="1"
-                                data-l10n-id="odf-scan-no-file-selected"
                                 value="[None Selected]"/>
                     <button id="choose-input-file"
                             label="Choose File"
@@ -97,11 +97,11 @@
             <groupbox>
                 <label data-l10n-id="odf-scan-output-file" value="Output File"/>
                 <hbox align="center" class="file-picker-row">
-                    <html:input type="text"
+                    <html:input native="true"
+                                type="text"
                                 id="output-path"
-                                readonly="readonly"
+                                readonly="true"
                                 flex="1"
-                                data-l10n-id="odf-scan-no-file-selected"
                                 value="[None Selected]"/>
                     <button id="choose-output-file"
                             label="Choose File"
